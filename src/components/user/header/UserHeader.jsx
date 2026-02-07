@@ -178,7 +178,7 @@ export default function UserHeader() {
       <div className="container mx-auto px-4 py-2 flex justify-between items-center h-18">
         {/* LEFT */}
         <Link to="/user/dashboard" className="flex items-center gap-3">
-          <img src="/GSM_logo.png" alt="Logo" className="w-12 h-12" />
+          <img src="/logoplms.png" alt="Logo" className="w-12 h-12" />
           <div>
             <div className="text-lg font-bold">
               <span className="text-blue-700">Go</span>

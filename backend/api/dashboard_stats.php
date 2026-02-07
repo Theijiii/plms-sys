@@ -30,13 +30,18 @@ $response = [
     'business' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'compliance' => 0, 'recent' => [], 'monthly' => [], 'weekly' => []],
     'franchise' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'under_review' => 0, 'recent' => [], 'monthly' => [], 'weekly' => []],
     'barangay' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'recent' => [], 'monthly' => [], 'weekly' => []],
-    'building' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'recent' => [], 'monthly' => [], 'weekly' => []]
+    'building' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'recent' => [], 'monthly' => [], 'weekly' => []],
+    'debug' => []
 ];
 
 // ============ BUSINESS PERMIT ============
 try {
     $conn = new mysqli($host, $user, $pass, "eplms_business_permit_db");
-    if (!$conn->connect_error) {
+    if ($conn->connect_error) {
+        $response['debug'][] = "Business DB connection failed: " . $conn->connect_error;
+        error_log("Business DB connection error: " . $conn->connect_error);
+    } else {
+        $response['debug'][] = "Business DB connected successfully";
         $conn->set_charset("utf8mb4");
 
         // Status counts
@@ -87,13 +92,18 @@ try {
         $conn->close();
     }
 } catch (Exception $e) {
+    $response['debug'][] = "Business error: " . $e->getMessage();
     error_log("Dashboard - Business error: " . $e->getMessage());
 }
 
 // ============ FRANCHISE PERMIT ============
 try {
     $conn = new mysqli($host, $user, $pass, "eplms_franchise_applications");
-    if (!$conn->connect_error) {
+    if ($conn->connect_error) {
+        $response['debug'][] = "Franchise DB connection failed: " . $conn->connect_error;
+        error_log("Franchise DB connection error: " . $conn->connect_error);
+    } else {
+        $response['debug'][] = "Franchise DB connected successfully";
         $conn->set_charset("utf8mb4");
 
         $result = $conn->query("SELECT status, COUNT(*) as count FROM franchise_permit_applications GROUP BY status");
@@ -140,13 +150,18 @@ try {
         $conn->close();
     }
 } catch (Exception $e) {
+    $response['debug'][] = "Franchise error: " . $e->getMessage();
     error_log("Dashboard - Franchise error: " . $e->getMessage());
 }
 
 // ============ BARANGAY PERMIT ============
 try {
     $conn = new mysqli($host, $user, $pass, "eplms_barangay_permit_db");
-    if (!$conn->connect_error) {
+    if ($conn->connect_error) {
+        $response['debug'][] = "Barangay DB connection failed: " . $conn->connect_error;
+        error_log("Barangay DB connection error: " . $conn->connect_error);
+    } else {
+        $response['debug'][] = "Barangay DB connected successfully";
         $conn->set_charset("utf8mb4");
 
         $result = $conn->query("SELECT status, COUNT(*) as count FROM barangay_permit GROUP BY status");
@@ -192,13 +207,18 @@ try {
         $conn->close();
     }
 } catch (Exception $e) {
+    $response['debug'][] = "Barangay error: " . $e->getMessage();
     error_log("Dashboard - Barangay error: " . $e->getMessage());
 }
 
 // ============ BUILDING PERMIT ============
 try {
     $conn = new mysqli($host, $user, $pass, "eplms_building_permit_system");
-    if (!$conn->connect_error) {
+    if ($conn->connect_error) {
+        $response['debug'][] = "Building DB connection failed: " . $conn->connect_error;
+        error_log("Building DB connection error: " . $conn->connect_error);
+    } else {
+        $response['debug'][] = "Building DB connected successfully";
         $conn->set_charset("utf8mb4");
 
         // Building permits don't have a status column in the current schema, default to pending
@@ -262,6 +282,7 @@ try {
         $conn->close();
     }
 } catch (Exception $e) {
+    $response['debug'][] = "Building error: " . $e->getMessage();
     error_log("Dashboard - Building error: " . $e->getMessage());
 }
 

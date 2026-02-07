@@ -93,16 +93,25 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
 
+      console.log('Fetching dashboard data from:', `${API_BASE}/dashboard_stats.php`);
+      
       const response = await fetch(`${API_BASE}/dashboard_stats.php`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
       const data = await response.json();
+      console.log('Dashboard API Response:', data);
 
       if (data.success) {
+        console.log('Business stats:', data.business);
+        console.log('Franchise stats:', data.franchise);
+        console.log('Barangay stats:', data.barangay);
+        console.log('Building stats:', data.building);
         setDashboardData(data);
       } else {
         throw new Error(data.message || 'Failed to fetch dashboard data');
