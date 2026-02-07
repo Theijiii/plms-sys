@@ -5,7 +5,7 @@ import {
   CheckCircle, AlertCircle, FileCheck, Upload, Check, X, Eye, 
   XCircle, Info, FileSignature, Calendar, Clock, Award, Shield, 
   Store, CreditCard, Home, Package, Truck, Users, RefreshCw, Edit,
-  ClipboardCheck, FileSearch, CalendarDays, AlertTriangle, Loader2
+  ClipboardCheck, FileSearch, CalendarDays, AlertTriangle, Loader2, Search
 } from "lucide-react";
 import Swal from 'sweetalert2';
 
@@ -20,20 +20,24 @@ const COLORS = {
   font: 'Montserrat, Arial, sans-serif'
 };
 
+const BARANGAY_API = "/backend/barangay_permit/admin_fetch.php";
+
 export default function BusinessSpecialPermitApplication() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-  const [modalTitle, setModalTitle] = useState('');
   const [agreeDeclaration, setAgreeDeclaration] = useState(false);
   const [showPreview, setShowPreview] = useState({});
   const [errors, setErrors] = useState({});
   const [applicantId, setApplicantId] = useState('');
   const [submitStatus, setSubmitStatus] = useState(null);
   const navigate = useNavigate();
+
+  // Barangay Clearance verification states
+  const [verifyingBarangayId, setVerifyingBarangayId] = useState(false);
+  const [barangayVerificationResult, setBarangayVerificationResult] = useState(null);
+  const [showBarangayModal, setShowBarangayModal] = useState(false);
+  const [validatedBarangayIds, setValidatedBarangayIds] = useState({});
+  const [barangayClearanceMethod, setBarangayClearanceMethod] = useState('upload');
 
   // Get current date for submission
   const getCurrentDate = () => {
@@ -60,7 +64,8 @@ export default function BusinessSpecialPermitApplication() {
     { id: 1, title: 'Applicant Information', description: 'Business owner details' },
     { id: 2, title: 'Event Details', description: 'Special permit information' },
     { id: 3, title: 'Documents', description: 'Upload required documents' },
-    { id: 4, title: 'Review & Submit', description: 'Review and submit application' }
+    { id: 4, title: 'Declaration', description: 'Agree to terms and sign' },
+    { id: 5, title: 'Review & Submit', description: 'Review and submit application' }
   ];
 
   const [formData, setFormData] = useState({
@@ -84,6 +89,7 @@ export default function BusinessSpecialPermitApplication() {
     // Documents
     event_permit: null,
     barangay_clearance: null,
+    barangay_clearance_id: '',
     valid_id: null,
     
     // Declaration
@@ -131,9 +137,9 @@ export default function BusinessSpecialPermitApplication() {
         [name]: checked
       }));
     } else {
-      // Clean contact number to digits only
+      // Clean contact number to digits only, max 11 digits
       if (name === 'contact_number') {
-        const cleaned = value.replace(/\D/g, '');
+        const cleaned = value.replace(/\D/g, '').slice(0, 11);
         setFormData(prev => ({
           ...prev,
           [name]: cleaned
@@ -178,13 +184,15 @@ export default function BusinessSpecialPermitApplication() {
     
     if (step === 2) {
       if (!formData.special_permit_type) newErrors.special_permit_type = 'Permit type is required';
-      if (!formData.event_date_start) newErrors.event_date_start = 'Start date is required';
-      if (!formData.event_date_end) newErrors.event_date_end = 'End date is required';
-      if (formData.event_date_start && formData.event_date_start < getTomorrowDate()) {
-        newErrors.event_date_start = 'Start date must be in the future';
+      if (!formData.event_date_start) {
+        newErrors.event_date_start = 'Start date is required';
+      } else if (formData.event_date_start < getTomorrowDate()) {
+        newErrors.event_date_start = 'Start date must be a future date';
       }
-      if (formData.event_date_end && formData.event_date_end < getTomorrowDate()) {
-        newErrors.event_date_end = 'End date must be in the future';
+      if (!formData.event_date_end) {
+        newErrors.event_date_end = 'End date is required';
+      } else if (formData.event_date_end < getTomorrowDate()) {
+        newErrors.event_date_end = 'End date must be a future date';
       }
       if (formData.event_date_start && formData.event_date_end && formData.event_date_end < formData.event_date_start) {
         newErrors.event_date_end = 'End date must be after start date';
@@ -193,7 +201,9 @@ export default function BusinessSpecialPermitApplication() {
     }
     
     if (step === 3) {
-      if (!formData.barangay_clearance) newErrors.barangay_clearance = 'Barangay clearance is required';
+      if (!formData.barangay_clearance && !formData.barangay_clearance_id.trim()) {
+        newErrors.barangay_clearance = 'Barangay clearance (file or ID) is required';
+      }
       if (!formData.valid_id) newErrors.valid_id = 'Valid ID is required';
     }
     
@@ -203,7 +213,18 @@ export default function BusinessSpecialPermitApplication() {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    
+    if (Object.keys(newErrors).length > 0) {
+      const errorList = Object.values(newErrors).join('\n• ');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Please Complete Required Fields',
+        html: `<div style="text-align:left;"><p>• ${errorList.replace(/\n• /g, '</p><p>• ')}</p></div>`,
+        confirmButtonColor: COLORS.primary
+      });
+      return false;
+    }
+    return true;
   };
 
   const isStepValid = (step) => {
@@ -213,18 +234,22 @@ export default function BusinessSpecialPermitApplication() {
              formData.owner_last_name.trim() && 
              formData.owner_address.trim() &&
              formData.contact_number.trim() && 
+             formData.contact_number.startsWith('09') &&
+             formData.contact_number.length === 11 &&
              formData.email_address.trim();
     }
     
     if (step === 2) {
       return formData.special_permit_type && 
              formData.event_date_start && 
+             formData.event_date_start >= getTomorrowDate() &&
              formData.event_date_end && 
+             formData.event_date_end >= getTomorrowDate() &&
              formData.event_location.trim();
     }
     
     if (step === 3) {
-      return formData.barangay_clearance && formData.valid_id;
+      return (formData.barangay_clearance || formData.barangay_clearance_id.trim()) && formData.valid_id;
     }
     
     if (step === 4) {
@@ -232,6 +257,94 @@ export default function BusinessSpecialPermitApplication() {
     }
     
     return true;
+  };
+
+  // Verify Barangay Clearance ID
+  const verifyBarangayClearanceId = async () => {
+    const barangayId = formData.barangay_clearance_id.trim();
+    
+    if (!barangayId) {
+      setBarangayVerificationResult({
+        success: false,
+        message: "Please enter a barangay clearance ID to verify"
+      });
+      setShowBarangayModal(true);
+      return;
+    }
+
+    if (validatedBarangayIds[barangayId]) {
+      setBarangayVerificationResult({
+        success: true,
+        message: "Barangay clearance ID is already verified and valid!",
+        data: validatedBarangayIds[barangayId]
+      });
+      setShowBarangayModal(true);
+      return;
+    }
+
+    setVerifyingBarangayId(true);
+
+    try {
+      const response = await fetch(BARANGAY_API);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      let permits = [];
+      if (data.success && data.data) {
+        permits = data.data;
+      } else if (Array.isArray(data)) {
+        permits = data;
+      } else {
+        permits = data.permits || [];
+      }
+
+      const foundPermit = permits.find(permit => {
+        const permitApplicantId = permit.applicant_id ? permit.applicant_id.toString() : '';
+        const permitPermitId = permit.permit_id ? permit.permit_id.toString() : '';
+        const searchId = barangayId.toString();
+        
+        return (permitApplicantId === searchId || permitPermitId === searchId) && permit.status === 'approved';
+      });
+
+      if (foundPermit) {
+        setBarangayVerificationResult({
+          success: true,
+          message: `Barangay clearance ID is VALID! Status: approved`,
+          data: foundPermit
+        });
+        
+        setValidatedBarangayIds(prev => ({
+          ...prev,
+          [barangayId]: foundPermit
+        }));
+        
+        if (foundPermit.permit_id) {
+          setFormData(prev => ({
+            ...prev,
+            barangay_permit_id: foundPermit.permit_id
+          }));
+        }
+      } else {
+        setBarangayVerificationResult({
+          success: false,
+          message: "Barangay clearance ID not found or not approved. Please check the ID and try again.",
+          data: null
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying barangay clearance ID:", error);
+      setBarangayVerificationResult({
+        success: false,
+        message: "Error connecting to verification service. Please try again later."
+      });
+    } finally {
+      setVerifyingBarangayId(false);
+      setShowBarangayModal(true);
+    }
   };
 
   const nextStep = () => {
@@ -246,15 +359,38 @@ export default function BusinessSpecialPermitApplication() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+    if (currentStep === steps.length) {
+      // On last step (Review), show confirm modal
+      Swal.fire({
+        title: 'Submit Application',
+        html: `
+          <div style="text-align: left; margin: 20px 0;">
+            <p style="margin-bottom: 15px;">Are you sure you want to submit your special permit application?</p>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #4A90E2;">
+              <p style="font-size: 14px;"><strong>Business:</strong> ${formData.business_name}</p>
+              <p style="font-size: 14px;"><strong>Permit Type:</strong> ${formData.special_permit_type}</p>
+              <p style="font-size: 14px;"><strong>Event Period:</strong> ${formData.event_date_start} to ${formData.event_date_end}</p>
+            </div>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: COLORS.success,
+        cancelButtonColor: COLORS.danger,
+        confirmButtonText: 'Submit Application',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          handleSubmit();
+        }
+      });
+      return;
+    }
     if (currentStep < steps.length) {
       const ok = validateStep(currentStep);
       if (ok) {
-        if (currentStep === steps.length - 1) {
-          setShowConfirmModal(true);
-        } else {
-          setCurrentStep(currentStep + 1);
-          setErrors({});
-        }
+        setCurrentStep(currentStep + 1);
+        setErrors({});
       }
     }
   };
@@ -292,7 +428,6 @@ export default function BusinessSpecialPermitApplication() {
     for (let i = 1; i <= steps.length; i++) {
       if (!validateStep(i)) {
         setCurrentStep(i);
-        setShowConfirmModal(false);
         return;
       }
     }
@@ -319,6 +454,7 @@ export default function BusinessSpecialPermitApplication() {
         event_location: formData.event_location,
         estimated_attendees: formData.estimated_attendees || '',
         applicant_signature: formData.applicant_signature,
+        barangay_clearance_id: formData.barangay_clearance_id || '',
         declaration_agreed: agreeDeclaration ? 1 : 0,
         date_submitted: formData.date_submitted,
         time_submitted: formData.time_submitted,
@@ -361,7 +497,6 @@ export default function BusinessSpecialPermitApplication() {
       }
 
       if (data.success) {
-        setShowConfirmModal(false);
         showSuccessMessage(data.message || "Special permit application submitted successfully!");
         
         setTimeout(() => {
@@ -399,7 +534,7 @@ export default function BusinessSpecialPermitApplication() {
     setShowPreview({});
   };
 
-  // Render review page (step 4)
+  // Render review page (step 5)
   const renderReviewPage = () => {
     return (
       <div className="space-y-6">
@@ -500,124 +635,72 @@ export default function BusinessSpecialPermitApplication() {
 
           {/* Documents Summary */}
           <div className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm">
-            <h4 className="font-bold text-lg mb-4" style={{ color: COLORS.primary }}>Documents Uploaded</h4>
+            <h4 className="font-bold text-lg mb-4" style={{ color: COLORS.primary }}>Documents</h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <div className="flex items-center">
-                  {formData.barangay_clearance ? (
-                    <Check className="w-5 h-5 text-green-600 mr-3" />
-                  ) : (
-                    <X className="w-5 h-5 text-red-600 mr-3" />
-                  )}
-                  <div>
-                    <p className="font-medium">Barangay Clearance</p>
-                    <p className="text-sm text-gray-600">
-                      {formData.barangay_clearance ? formData.barangay_clearance.name : 'Not uploaded'}
-                    </p>
-                  </div>
+              <div className="flex items-center p-3 bg-gray-50 rounded">
+                {(formData.barangay_clearance || validatedBarangayIds[formData.barangay_clearance_id]) ? (
+                  <Check className="w-5 h-5 text-green-600 mr-3" />
+                ) : (
+                  <X className="w-5 h-5 text-red-600 mr-3" />
+                )}
+                <div>
+                  <p className="font-medium">Barangay Clearance</p>
+                  <p className="text-sm text-gray-600">
+                    {formData.barangay_clearance ? formData.barangay_clearance.name :
+                     validatedBarangayIds[formData.barangay_clearance_id] ? `ID: ${formData.barangay_clearance_id} (Verified)` :
+                     formData.barangay_clearance_id ? `ID: ${formData.barangay_clearance_id} (Not verified)` : 'Not provided'}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <div className="flex items-center">
-                  {formData.valid_id ? (
-                    <Check className="w-5 h-5 text-green-600 mr-3" />
-                  ) : (
-                    <X className="w-5 h-5 text-red-600 mr-3" />
-                  )}
-                  <div>
-                    <p className="font-medium">Valid ID</p>
-                    <p className="text-sm text-gray-600">
-                      {formData.valid_id ? formData.valid_id.name : 'Not uploaded'}
-                    </p>
-                  </div>
+              <div className="flex items-center p-3 bg-gray-50 rounded">
+                {formData.valid_id ? (
+                  <Check className="w-5 h-5 text-green-600 mr-3" />
+                ) : (
+                  <X className="w-5 h-5 text-red-600 mr-3" />
+                )}
+                <div>
+                  <p className="font-medium">Valid ID</p>
+                  <p className="text-sm text-gray-600">
+                    {formData.valid_id ? formData.valid_id.name : 'Not uploaded'}
+                  </p>
                 </div>
               </div>
 
               {formData.event_permit && (
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex items-center">
-                    <Check className="w-5 h-5 text-green-600 mr-3" />
-                    <div>
-                      <p className="font-medium">Event Permit (Optional)</p>
-                      <p className="text-sm text-gray-600">{formData.event_permit.name}</p>
-                    </div>
+                <div className="flex items-center p-3 bg-gray-50 rounded">
+                  <Check className="w-5 h-5 text-green-600 mr-3" />
+                  <div>
+                    <p className="font-medium">Event Permit (Optional)</p>
+                    <p className="text-sm text-gray-600">{formData.event_permit.name}</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Declaration */}
+          {/* Declaration Status */}
           <div className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm">
-            <h4 className="font-bold text-lg mb-4" style={{ color: COLORS.primary }}>Declaration</h4>
-            
-            <div className="mb-6 p-4 border-2 border-red-200 bg-red-50 rounded-lg">
-              <h5 className="font-bold mb-3 text-red-700">SPECIAL PERMIT DECLARATION</h5>
-              <div className="text-sm space-y-2">
-                <p>I, <span className="font-bold">{formData.owner_first_name} {formData.owner_last_name}</span>, hereby solemnly declare that:</p>
-                <ul className="list-disc ml-5 space-y-1">
-                  <li>All information provided in this application is true, complete, and correct;</li>
-                  <li>I will comply with all applicable laws and regulations;</li>
-                  <li>I will ensure public safety during the event/operation;</li>
-                  <li>I accept full responsibility for any violations;</li>
-                  <li>I understand this permit is temporary and subject to city regulations.</li>
-                </ul>
+            <h4 className="font-bold text-lg mb-4" style={{ color: COLORS.primary }}>Declaration & Signature</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Declaration Status</p>
+                <p className="font-medium text-green-600">Agreed and Signed</p>
               </div>
-            </div>
-
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="final-declaration"
-                checked={agreeDeclaration}
-                onChange={(e) => setAgreeDeclaration(e.target.checked)}
-                className={`w-5 h-5 mt-1 text-green-600 border-gray-300 rounded focus:ring-green-500 ${errors.agreeDeclaration ? 'border-red-500' : ''}`}
-              />
-              <label htmlFor="final-declaration" className="ml-3">
-                <span className="font-bold text-red-700">FINAL DECLARATION AND CONSENT *</span>
-                <p className="text-sm mt-1">
-                  I have read, understood, and agree to all terms and conditions stated in this declaration. I certify that all information provided is accurate and I accept full responsibility.
-                </p>
-              </label>
-            </div>
-            {errors.agreeDeclaration && <p className="text-red-600 text-sm mt-2 ml-8">{errors.agreeDeclaration}</p>}
-
-            <div className="mt-6 pt-6 border-t">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Your Signature <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleSignatureUpload}
-                  className="w-full p-2 border border-gray-300 rounded-lg"
-                />
-                <p className="text-xs text-gray-500 mt-1">Upload an image of your signature (PNG, JPG, etc.)</p>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Submission Date</p>
+                <p className="font-medium">{formData.date_submitted}</p>
+                <p className="text-xs text-gray-500">{formData.time_submitted}</p>
               </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Applicant Signature</p>
-                  {formData.applicant_signature ? (
-                    <div className="mt-2">
-                      <img 
-                        src={formData.applicant_signature} 
-                        alt="Signature" 
-                        className="h-20 border rounded"
-                      />
-                      <p className="text-xs text-green-600 mt-1">Signature uploaded</p>
-                    </div>
-                  ) : (
-                    <p className="text-red-600 text-sm mt-1">Signature required</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Submission Date</p>
-                  <p className="font-medium">{formData.date_submitted}</p>
-                  <p className="text-xs text-gray-500">{formData.time_submitted}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Applicant Signature</p>
+                {formData.applicant_signature ? (
+                  <div className="mt-2">
+                    <img src={formData.applicant_signature} alt="Signature" className="h-16 border rounded" />
+                  </div>
+                ) : (
+                  <p className="text-red-600 text-sm mt-1">Not provided</p>
+                )}
               </div>
             </div>
           </div>
@@ -725,6 +808,7 @@ export default function BusinessSpecialPermitApplication() {
                   name="contact_number"
                   value={formData.contact_number}
                   onChange={handleChange}
+                  maxLength={11}
                   className={`w-full p-3 border border-black rounded-lg ${errors.contact_number ? 'border-red-500' : ''}`}
                   placeholder="09XXXXXXXXX"
                   style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
@@ -931,12 +1015,12 @@ export default function BusinessSpecialPermitApplication() {
                 </div>
               </div>
 
-              {/* Barangay Clearance (Required) */}
-              <div className="border border-gray-300 rounded-lg bg-blue-50">
-                <div className="flex items-center justify-between p-3">
+              {/* Barangay Clearance (Required) - Upload or ID */}
+              <div className="border border-gray-300 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between p-3 bg-blue-50">
                   <div className="flex items-center">
                     <div className="mr-3">
-                      {formData.barangay_clearance ? (
+                      {(formData.barangay_clearance || validatedBarangayIds[formData.barangay_clearance_id]) ? (
                         <Check className="w-5 h-5 text-green-600" />
                       ) : (
                         <X className="w-5 h-5 text-red-600" />
@@ -945,38 +1029,140 @@ export default function BusinessSpecialPermitApplication() {
                     <div>
                       <span className="font-medium">Barangay Clearance: <span className="text-red-500">*</span></span>
                       <p className="text-sm text-gray-600">
-                        {formData.barangay_clearance ? formData.barangay_clearance.name : 'Required'}
+                        {formData.barangay_clearance ? formData.barangay_clearance.name :
+                         formData.barangay_clearance_id ? 'ID Provided' : 'File or ID required'}
                       </p>
-                      <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
+                      <p className="text-xs text-red-500 font-semibold">
+                        * Either file upload OR ID number must be provided
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <label className="cursor-pointer">
+                </div>
+                
+                {/* Radio buttons to choose method */}
+                <div className="p-3 bg-gray-50 border-b">
+                  <label className="block text-sm font-medium mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                    Choose verification method:
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center cursor-pointer">
                       <input
-                        type="file"
-                        name="barangay_clearance"
-                        onChange={handleChange}
-                        accept=".pdf,.jpg,.png,.doc,.docx"
-                        className="hidden"
+                        type="radio"
+                        name="barangay_method"
+                        value="upload"
+                        checked={barangayClearanceMethod === 'upload'}
+                        onChange={(e) => setBarangayClearanceMethod(e.target.value)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
-                      <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${
-                        !formData.barangay_clearance ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'
-                      }`}>
-                        <Upload className="w-4 h-4" />
-                        {formData.barangay_clearance ? 'Change' : 'Upload'}
-                      </div>
+                      <span className="ml-2 text-sm" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                        Upload Document
+                      </span>
                     </label>
-                    {formData.barangay_clearance && (
-                      <button
-                        type="button"
-                        onClick={() => previewFile(formData.barangay_clearance)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300"
-                      >
-                        <Eye className="w-4 h-4" />
-                        Preview
-                      </button>
-                    )}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="barangay_method"
+                        value="id"
+                        checked={barangayClearanceMethod === 'id'}
+                        onChange={(e) => setBarangayClearanceMethod(e.target.value)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                        Enter ID Number (API Verification)
+                      </span>
+                    </label>
                   </div>
+                </div>
+
+                {/* File Upload Section */}
+                {barangayClearanceMethod === 'upload' && (
+                  <div className="p-3 bg-white">
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          name="barangay_clearance"
+                          onChange={handleChange}
+                          accept=".pdf,.jpg,.png,.doc,.docx"
+                          className="hidden"
+                        />
+                        <div className={`flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${
+                          !formData.barangay_clearance ? 'border-gray-300' : 'border-green-200 bg-green-50'
+                        }`} style={{ color: COLORS.secondary }}>
+                          <Upload className="w-4 h-4" />
+                          {formData.barangay_clearance ? 'Change File' : 'Upload Document'}
+                        </div>
+                      </label>
+                      {formData.barangay_clearance && (
+                        <>
+                          <span className="text-sm text-gray-600">{formData.barangay_clearance.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => previewFile(formData.barangay_clearance)}
+                            className="flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border border-gray-300"
+                            style={{ color: COLORS.secondary }}
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ID Input Section */}
+                {barangayClearanceMethod === 'id' && (
+                  <div className="p-3 bg-white">
+                    <label className="block text-sm font-medium mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                      Barangay Clearance ID/Applicant ID:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="barangay_clearance_id"
+                        value={formData.barangay_clearance_id}
+                        onChange={handleChange}
+                        placeholder="Enter Barangay Clearance Applicant ID"
+                        className="flex-1 p-2 border border-gray-300 rounded"
+                        style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
+                      />
+                      {formData.barangay_clearance_id && (
+                        <button
+                          type="button"
+                          onClick={verifyBarangayClearanceId}
+                          disabled={verifyingBarangayId}
+                          className={`flex items-center gap-1 px-4 py-2 text-sm rounded transition-colors duration-300 border ${
+                            validatedBarangayIds[formData.barangay_clearance_id]
+                              ? 'bg-green-100 border-green-500 text-green-700' 
+                              : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
+                          }`}
+                        >
+                          {verifyingBarangayId ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                          ) : validatedBarangayIds[formData.barangay_clearance_id] ? (
+                            <><Check className="w-4 h-4" /> Verified</>
+                          ) : (
+                            <><Search className="w-4 h-4" /> Verify with API</>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-3 bg-gray-50">
+                  <p className="text-xs">
+                    <span className={`font-medium ${
+                      (formData.barangay_clearance || validatedBarangayIds[formData.barangay_clearance_id]) ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {(formData.barangay_clearance || validatedBarangayIds[formData.barangay_clearance_id])
+                        ? '✓ Requirement satisfied' 
+                        : (formData.barangay_clearance_id && !validatedBarangayIds[formData.barangay_clearance_id])
+                          ? '⚠ Please verify the ID to proceed'
+                          : '⚠ Please provide either the document or ID number'}
+                    </span>
+                  </p>
                 </div>
               </div>
               {errors.barangay_clearance && <p className="text-red-600 text-sm mt-1">{errors.barangay_clearance}</p>}
@@ -1035,6 +1221,87 @@ export default function BusinessSpecialPermitApplication() {
         );
         
       case 4:
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-semibold mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>Declaration & Signature</h3>
+              <p className="text-sm text-gray-600 mb-4">{steps[3].description}</p>
+            </div>
+
+            <div className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm">
+              <div className="mb-6 p-4 border-2 border-red-200 bg-red-50 rounded-lg">
+                <h5 className="font-bold mb-3 text-red-700">SPECIAL PERMIT DECLARATION</h5>
+                <div className="text-sm space-y-2">
+                  <p>I, <span className="font-bold">{formData.owner_first_name} {formData.owner_last_name}</span>, hereby solemnly declare that:</p>
+                  <ul className="list-disc ml-5 space-y-1">
+                    <li>All information provided in this application is true, complete, and correct;</li>
+                    <li>I will comply with all applicable laws and regulations;</li>
+                    <li>I will ensure public safety during the event/operation;</li>
+                    <li>I accept full responsibility for any violations;</li>
+                    <li>I understand this permit is temporary and subject to city regulations.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  id="final-declaration"
+                  checked={agreeDeclaration}
+                  onChange={(e) => setAgreeDeclaration(e.target.checked)}
+                  className={`w-5 h-5 mt-1 text-green-600 border-gray-300 rounded focus:ring-green-500 ${errors.agreeDeclaration ? 'border-red-500' : ''}`}
+                />
+                <label htmlFor="final-declaration" className="ml-3">
+                  <span className="font-bold text-red-700">FINAL DECLARATION AND CONSENT *</span>
+                  <p className="text-sm mt-1">
+                    I have read, understood, and agree to all terms and conditions stated in this declaration. I certify that all information provided is accurate and I accept full responsibility.
+                  </p>
+                </label>
+              </div>
+              {errors.agreeDeclaration && <p className="text-red-600 text-sm mt-2 ml-8">{errors.agreeDeclaration}</p>}
+
+              <div className="mt-6 pt-6 border-t">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Your Signature <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSignatureUpload}
+                    className="w-full p-2 border border-gray-300 rounded-lg"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Upload an image of your signature (PNG, JPG, etc.)</p>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Applicant Signature</p>
+                    {formData.applicant_signature ? (
+                      <div className="mt-2">
+                        <img 
+                          src={formData.applicant_signature} 
+                          alt="Signature" 
+                          className="h-20 border rounded"
+                        />
+                        <p className="text-xs text-green-600 mt-1">Signature uploaded</p>
+                      </div>
+                    ) : (
+                      <p className="text-red-600 text-sm mt-1">Signature required</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Submission Date</p>
+                    <p className="font-medium">{formData.date_submitted}</p>
+                    <p className="text-xs text-gray-500">{formData.time_submitted}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 5:
         return renderReviewPage();
         
       default:
@@ -1146,12 +1413,11 @@ export default function BusinessSpecialPermitApplication() {
                 !isStepValid(currentStep) ? 'cursor-not-allowed' : 'transition-colors duration-300'
               }`}
             >
-              {currentStep === steps.length - 1 ? 'Review & Submit' : 'Next'}
+              {currentStep === steps.length - 1 ? 'Review Application' : 'Next'}
             </button>
           ) : (
             <button
-              type="button"
-              onClick={() => setShowConfirmModal(true)}
+              type="submit"
               onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
               onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
               style={{ background: COLORS.success }}
@@ -1237,179 +1503,47 @@ export default function BusinessSpecialPermitApplication() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+      {/* Barangay Clearance Verification Modal */}
+      {showBarangayModal && barangayVerificationResult && (
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div 
             className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
             style={{ 
               background: 'rgba(255, 255, 255, 0.95)',
-              fontFamily: COLORS.font,
-              backdropFilter: 'blur(10px)'
+              fontFamily: COLORS.font
             }}
           >
             <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
-                <FileSignature className="w-8 h-8 text-purple-600" />
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                barangayVerificationResult.success ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                {barangayVerificationResult.success ? (
+                  <Check className="w-8 h-8 text-green-600" />
+                ) : (
+                  <X className="w-8 h-8 text-red-600" />
+                )}
               </div>
             </div>
             
-            <h2 className="text-xl font-bold text-center mb-4" style={{ color: COLORS.primary }}>Submit Special Permit Application?</h2>
+            <h2 className="text-xl font-bold text-center mb-4" style={{ 
+              color: barangayVerificationResult.success ? COLORS.success : COLORS.danger 
+            }}>
+              {barangayVerificationResult.success ? 'Verification Successful' : 'Verification Failed'}
+            </h2>
             
-            <div className="mb-6">
-              <p className="text-sm text-center mb-3" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                Are you sure you want to submit your special permit application? Please ensure all information is correct before submitting.
-              </p>
-              
-              <div className="p-4 bg-gray-50 rounded-lg border mt-4">
-                <p className="text-sm font-semibold mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>Application Summary:</p>
-                <ul className="text-xs space-y-1" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                  <li>• Business: {formData.business_name}</li>
-                  <li>• Owner: {formData.owner_first_name} {formData.owner_last_name}</li>
-                  <li>• Permit Type: {formData.special_permit_type}</li>
-                  <li>• Event Period: {formData.event_date_start} to {formData.event_date_end}</li>
-                  <li>• Location: {formData.event_location}</li>
-                  <li>• Submission Date: {formData.date_submitted}</li>
-                  <li>• Declaration Status: <span className="text-green-600 font-semibold">Agreed and Signed</span></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isSubmitting}
-                style={{ background: COLORS.danger }}
-                onMouseEnter={e => {
-                  if (!isSubmitting) e.currentTarget.style.background = COLORS.accent;
-                }}
-                onMouseLeave={e => {
-                  if (!isSubmitting) e.currentTarget.style.background = COLORS.danger;
-                }}
-                className={`px-6 py-2 rounded-lg font-semibold text-white ${
-                  isSubmitting ? 'cursor-not-allowed' : 'transition-colors duration-300'
-                }`}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                style={{ background: isSubmitting ? '#9CA3AF' : COLORS.success }}
-                onMouseEnter={e => {
-                  if (!isSubmitting) e.currentTarget.style.background = COLORS.accent;
-                }}
-                onMouseLeave={e => {
-                  if (!isSubmitting) e.currentTarget.style.background = COLORS.success;
-                }}
-                className={`px-6 py-2 rounded-lg font-semibold text-white ${
-                  isSubmitting ? 'cursor-not-allowed' : 'transition-colors duration-300'
-                }`}
-              >
-                {isSubmitting ? 'Submitting...' : 'Confirm & Submit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div 
-            className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.95)',
-              fontFamily: COLORS.font,
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            
-            <h2 className="text-xl font-bold text-center mb-4" style={{ color: COLORS.primary }}>{modalTitle}</h2>
-            
-            <div className="mb-6">
-              <p className="text-sm text-center mb-3" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                {modalMessage}
-              </p>
-              <p className="text-xs text-center text-gray-500" style={{ fontFamily: COLORS.font }}>
-                You will be redirected to your dashboard in a few seconds...
-              </p>
-            </div>
+            <p className="text-sm text-center mb-6" style={{ color: COLORS.secondary }}>
+              {barangayVerificationResult.message}
+            </p>
 
             <div className="flex justify-center">
               <button
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  navigate("/user/permittracker");
-                }}
+                onClick={() => setShowBarangayModal(false)}
                 style={{ background: COLORS.success }}
                 onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
                 onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
-              >
-                Track Application
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div 
-            className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.95)',
-              fontFamily: COLORS.font,
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <X className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-            
-            <h2 className="text-xl font-bold text-center mb-4" style={{ color: COLORS.danger }}>{modalTitle}</h2>
-            
-            <div className="mb-6">
-              <p className="text-sm text-center mb-3" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                {modalMessage}
-              </p>
-              <p className="text-xs text-center text-gray-500" style={{ fontFamily: COLORS.font }}>
-                Please check your information and try again.
-              </p>
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setShowErrorModal(false)}
-                style={{ background: COLORS.danger }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
-                onMouseLeave={e => e.currentTarget.style.background = COLORS.danger}
                 className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
               >
                 Close
-              </button>
-              
-              <button
-                onClick={() => {
-                  setShowErrorModal(false);
-                  setShowConfirmModal(true);
-                }}
-                style={{ background: COLORS.success }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
-                onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
-              >
-                Try Again
               </button>
             </div>
           </div>

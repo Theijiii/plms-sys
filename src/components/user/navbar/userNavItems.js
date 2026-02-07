@@ -1,4 +1,4 @@
-import { LayoutDashboard, Briefcase, Building2, Bus, Home, Search,Settings } from "lucide-react";
+import { LayoutDashboard, Briefcase, Building2, Bus, Home, Search, Settings, Activity } from "lucide-react";
 
 const userNavItems = [
   { id: "dashboard", 
@@ -35,6 +35,12 @@ const userNavItems = [
     label: "Permit Tracker", 
     icon: Search, 
     path: "/user/permittracker" 
+  },
+  {
+    id: "activitytrail",
+    label: "Activity Trail",
+    icon: Activity,
+    path: "/user/activity"
   },
   {
     id: "settings",

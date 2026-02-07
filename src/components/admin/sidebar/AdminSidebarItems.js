@@ -10,6 +10,7 @@ import {
   Home,
   ShieldCheck,
   GraduationCap,
+  Activity,
 } from "lucide-react";
 
 const AdminSidebarItems = [
@@ -97,6 +98,15 @@ const AdminSidebarItems = [
     icon: ShieldCheck,
     path: "/admin/brgypermit",
     department: ["barangay", "super"],
+  },
+
+  // AUDIT TRAIL (Super Admin only)
+  {
+    id: "auditTrail",
+    label: "Audit Activity Trail",
+    icon: Activity,
+    path: "/admin/audittrail",
+    department: ["super"],
   },
 ];
 

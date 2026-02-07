@@ -50,6 +50,8 @@ import BarangayPermitAnalytics from "./pages/admin/BarangayPermit/Barangay";
 import BrgyPermitApplication from "./pages/admin/BarangayPermit/BrgyPermitApplication";
 
 import Tracker from "./pages/admin/PermitTracker/Tracker";
+import AuditTrail from "./pages/admin/AuditTrail/AuditTrail";
+import UserAuditTrail from "./pages/user/AuditTrail/UserAuditTrail";
 import LandingPage from "./pages/plms";
 
 
@@ -111,6 +113,7 @@ function App() {
           <Route path="permittracker" element={<UserTracker />} />
           <Route path="general" element={<UserGeneralSettings />} />
           <Route path="security" element={<UserSecuritySettings />} />
+          <Route path="activity" element={<UserAuditTrail />} />
         </Route>
 
         {/* Protected Admin routes with Department Restrictions */}
@@ -230,6 +233,15 @@ function App() {
             element={
               <ProtectedRoute requiredRole="admin" allowedDepartments={['super']}>
                 <Tracker />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="audittrail" 
+            element={
+              <ProtectedRoute requiredRole="admin" allowedDepartments={['super']}>
+                <AuditTrail />
               </ProtectedRoute>
             } 
           />

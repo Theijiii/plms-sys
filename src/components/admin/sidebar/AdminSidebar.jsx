@@ -54,6 +54,8 @@ function AdminSidebar({ collapsed }) {
       // Create department groups
       const departmentGroups = {};
       
+      const superOnlyItems = [];
+
       AdminSidebarItems.forEach(item => {
         // Skip main dashboard for now
         if (item.id === 'dashboard') return;
@@ -67,7 +69,7 @@ function AdminSidebar({ collapsed }) {
             departmentGroups[itemDept] = {
               id: `${itemDept}Department`,
               label: `${itemDept.charAt(0).toUpperCase() + itemDept.slice(1)} Department`,
-              icon: getDepartmentIcon(itemDept), // ADD THIS LINE
+              icon: getDepartmentIcon(itemDept),
               department: ['super'],
               subItems: []
             };
@@ -75,10 +77,13 @@ function AdminSidebar({ collapsed }) {
           
           // Add item to department group
           departmentGroups[itemDept].subItems.push(item);
+        } else {
+          // Items only for super admin (no other department) — show as top-level
+          superOnlyItems.push(item);
         }
       });
 
-      // Create final array with main dashboard first, then department groups
+      // Create final array with main dashboard first, then department groups, then super-only items
       const result = [];
       
       // Add main dashboard item first
@@ -94,6 +99,9 @@ function AdminSidebar({ collapsed }) {
           result.push(departmentGroups[dept]);
         }
       });
+
+      // Add super-admin-only items at the end
+      superOnlyItems.forEach(item => result.push(item));
 
       return result.filter(Boolean);
     }
