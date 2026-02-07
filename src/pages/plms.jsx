@@ -146,12 +146,12 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#4CAF50] via-[#45a89a] to-[#4A90E2] relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-green-50 relative overflow-hidden">
       {/* Animated Background Shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-green-400/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-100/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-green-100/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-indigo-100/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
       </div>
       {/* Header - WHITE (unchanged) */}
       <header
@@ -162,11 +162,11 @@ export default function LandingPage() {
         <div className="px-[50px] py-3 flex justify-between items-center">
           {/* LEFT: Logo + Title + Tagline */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200">
+            <div className="w-12 h-12 flex items-center justify-center">
               <img
-                src="/GSM_logo.png"
-                alt="GoServePH Logo"
-                className="w-10 h-10 object-contain"
+                src="/logoplms.png"
+                alt="PLMS Logo"
+                className="w-12 h-12 object-contain"
               />
             </div>
             <div className="flex flex-col leading-tight">
@@ -203,20 +203,27 @@ export default function LandingPage() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           {/* Left Section - Hero Content */}
           <div className="text-center lg:text-left space-y-8 mt-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
-              <Award className="w-4 h-4 text-yellow-300" />
-              <span className="text-sm font-medium text-white">Trusted Government Service Platform</span>
+            {/* Logo + Badge */}
+            <div className="flex flex-col items-center lg:items-start gap-6">
+              <img
+                src="/logoplms.png"
+                alt="PLMS Logo"
+                className="w-32 h-32 object-contain drop-shadow-lg"
+              />
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 backdrop-blur-sm rounded-full border border-blue-300">
+                <Award className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Trusted Government Service Platform</span>
+              </div>
             </div>
 
             <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-white drop-shadow-lg">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-800 drop-shadow-sm">
                 Permit & Licensing Made
-                <span className="block mt-2 bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">
+                <span className="block mt-2 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
                   Simple & Fast
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-white/95 leading-relaxed font-medium max-w-2xl">
+              <p className="text-lg md:text-xl text-gray-700 leading-relaxed font-medium max-w-2xl">
                 Transform your permit applications with our secure digital platform. Government services are now faster, simpler, and accessible at your fingertips.
               </p>
             </div>
@@ -226,17 +233,17 @@ export default function LandingPage() {
               {features.map((feature, index) => (
                 <div 
                   key={index} 
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                  className="bg-white backdrop-blur-md border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 transition-all duration-300 hover:scale-105 hover:shadow-xl group"
                 >
                   <div className={`w-12 h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                     <div className="text-white">
                       {feature.icon}
                     </div>
                   </div>
-                  <h3 className="font-bold text-white text-sm mb-1">
+                  <h3 className="font-bold text-gray-800 text-sm mb-1">
                     {feature.title}
                   </h3>
-                  <p className="text-xs text-white/80">
+                  <p className="text-xs text-gray-600">
                     {feature.description}
                   </p>
                 </div>
@@ -257,16 +264,16 @@ export default function LandingPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/20">
+            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center space-y-2">
-                  <div className="flex items-center justify-center text-white/80">
+                  <div className="flex items-center justify-center text-blue-600">
                     {stat.icon}
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
+                  <div className="text-2xl md:text-3xl font-bold text-gray-800 drop-shadow-sm">
                     {stat.value}
                   </div>
-                  <div className="text-xs md:text-sm text-white/90 font-medium">
+                  <div className="text-xs md:text-sm text-gray-600 font-medium">
                     {stat.label}
                   </div>
                 </div>
@@ -277,13 +284,13 @@ export default function LandingPage() {
           {/* Right Section - Service Cards */}
           <div className="space-y-6">
             <div className="text-center lg:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-white" />
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3 flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-blue-600" />
                 </div>
                 Our Services
               </h2>
-              <p className="text-white/90 text-sm md:text-base">
+              <p className="text-gray-700 text-sm md:text-base">
                 Comprehensive digital solutions for all your permit needs
               </p>
             </div>

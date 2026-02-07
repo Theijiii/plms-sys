@@ -1,14 +1,27 @@
-
 <?php
-header("Access-Control-Allow-Origin: https://e-plms.goserveph.com/git");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+// Database connection configuration
 $servername = "localhost";
 $username = "eplms_kobe";
 $password = "mypassword";
 $dbname = "eplms_franchise_applications";
 
-// Create connection
+function getDBConnection() {
+    global $servername, $username, $password, $dbname;
+    
+    $conn = new mysqli($servername, $username, $password, $dbname);
+    
+    if ($conn->connect_error) {
+        die(json_encode([
+            'success' => false,
+            'message' => 'Database connection failed: ' . $conn->connect_error
+        ]));
+    }
+    
+    $conn->set_charset("utf8mb4");
+    return $conn;
+}
+
+// Create connection for backward compatibility
 $conn = new mysqli($servername, $username, $password, $dbname);
 
 // Check connection

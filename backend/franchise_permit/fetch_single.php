@@ -1,35 +1,32 @@
 <?php
-session_start();
+// Prevent any output before headers
+ob_start();
 
-$allowedOrigins = [
-    'http://localhost',
-    'https://e-plms.goserveph.com/',
-    'urbanplanning.goserveph.com',
-    'https://urbanplanning.goserveph.com'
-];
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin && in_array($origin, $allowedOrigins, true)) {
-    header("Access-Control-Allow-Origin: {$origin}");
-} else {
-    header("Access-Control-Allow-Origin: https://e-plms.goserveph.com/");
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
 }
+
+// Set headers first
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 // Handle preflight
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit(0);
+}
+
 // Database Connection
 require_once __DIR__ . '/db.php';
 
 try {
-    // Get database connection using the function from db.php
-    $conn = getDBConnection();
-    
-    if (!$conn || $conn->connect_error) {
-        throw new Exception('Database connection failed: ' . ($conn ? $conn->connect_error : 'Could not get connection'));
+    // Check database connection (created by db.php)
+    if (!isset($conn) || $conn->connect_error) {
+        throw new Exception('Database connection failed: ' . (isset($conn) ? $conn->connect_error : 'Connection not established'));
     }
 
     // Check if application_id is provided
@@ -110,14 +107,31 @@ try {
         }
     }
 
+    // Close connection before output
+    if (isset($conn)) {
+        $conn->close();
+    }
+
+    // Clear any previous output
+    ob_clean();
+    
     $response = [
         'success' => true,
         'data' => $application
     ];
 
-    echo json_encode($response, JSON_UNESCAPED_SLASHES);
+    echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    exit();
 
 } catch (Exception $e) {
+    // Close connection
+    if (isset($conn)) {
+        $conn->close();
+    }
+    
+    // Clear any previous output
+    ob_clean();
+    
     http_response_code(500);
     $error_response = [
         'success' => false,
@@ -127,12 +141,7 @@ try {
             'timestamp' => date('Y-m-d H:i:s')
         ]
     ];
-    echo json_encode($error_response);
+    echo json_encode($error_response, JSON_UNESCAPED_UNICODE);
     error_log("Error in fetch_single.php: " . $e->getMessage());
+    exit();
 }
-
-// Close connection if it exists
-if (isset($conn)) {
-    $conn->close();
-}
-?>

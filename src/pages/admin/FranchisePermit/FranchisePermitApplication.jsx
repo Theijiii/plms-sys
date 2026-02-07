@@ -595,35 +595,44 @@ export default function FranchisePermitApplication() {
       const applicationId = franchise.application_id || franchise.id;
       const response = await fetch(`${API_BASE}/fetch_single.php?application_id=${applicationId}`);
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          const franchiseData = data.data;
-          
-          // Parse attachments from individual fields
-          const attachments = parseAttachments(franchiseData);
-          
-          setSelectedFranchise({
-            ...franchiseData,
-            email_address: franchiseData.email,
-            address: franchiseData.home_address || 'N/A',
-            year_model: franchiseData.year_acquired,
-            vehicle_color: franchiseData.color,
-            or_number: franchiseData.lto_or_number,
-            cr_number: franchiseData.lto_cr_number,
-            driver_license: franchiseData.id_number || 'N/A',
-            franchise_number: franchiseData.application_id,
-            date_applied: franchiseData.formatted_date_submitted || formatDate(franchiseData.date_submitted),
-            attachments: attachments, // Pass the parsed attachments
-            status: mapStatusToFrontend(franchiseData.status)
-          });
-        } else {
-          throw new Error(data.message || 'Failed to fetch details');
-        }
-      } else {
+      if (!response.ok) {
         throw new Error(`HTTP error: ${response.status}`);
       }
-      setShowModal(true);
+
+      // Check content type to ensure we're getting JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server returned invalid response format. Please check the backend endpoint.');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const franchiseData = data.data;
+        
+        // Parse attachments from individual fields
+        const attachments = parseAttachments(franchiseData);
+        
+        setSelectedFranchise({
+          ...franchiseData,
+          email_address: franchiseData.email,
+          address: franchiseData.home_address || 'N/A',
+          year_model: franchiseData.year_acquired,
+          vehicle_color: franchiseData.color,
+          or_number: franchiseData.lto_or_number,
+          cr_number: franchiseData.lto_cr_number,
+          driver_license: franchiseData.id_number || 'N/A',
+          franchise_number: franchiseData.application_id,
+          date_applied: franchiseData.formatted_date_submitted || formatDate(franchiseData.date_submitted),
+          attachments: attachments, // Pass the parsed attachments
+          status: mapStatusToFrontend(franchiseData.status)
+        });
+        setShowModal(true);
+      } else {
+        throw new Error(data.message || 'Failed to fetch details');
+      }
     } catch (err) {
       console.error('Error viewing franchise:', err);
       Swal.fire('Error', 'Failed to load application details: ' + err.message, 'error');

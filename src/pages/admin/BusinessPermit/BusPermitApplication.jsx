@@ -638,7 +638,7 @@ const fetchSinglePermit = async (permitId) => {
 
   useEffect(() => {
     fetchPermits();
-  }, [activeTab, sortOption]);
+  }, [activeTab, sortOption, searchQuery]);
 
   const openModal = async (permit) => {
     try {
@@ -1384,14 +1384,49 @@ const viewFile = async (file) => {
                 </svg>
               </div>
               
+              {/* Export Buttons */}
+              <button
+                onClick={exportToCSV}
+                disabled={exporting}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {exporting && exportType === "csv" ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Export CSV</span>
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={exportToPDF}
+                disabled={exporting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {exporting && exportType === "pdf" ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Export PDF</span>
+                  </>
+                )}
+              </button>
+              
               {/* Refresh Button */}
               <button 
                 onClick={fetchPermits}
                 className="px-4 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#4CAF50]/80 transition-colors flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <RefreshCw className="w-4 h-4" />
                 Refresh
               </button>
             </div>

@@ -2646,191 +2646,80 @@ export default function BusinessNew() {
             </div>
             
             <div className="space-y-4">
-              <div className="border border-gray-300 rounded-lg bg-blue-50">
-                <div className="flex items-center justify-between p-3 border-b">
+              <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
                   <div className="flex items-center">
-                    <div className="mr-3">
-                      {(formData.barangay_clearance || formData.barangay_clearance_id) ? (
-                        <Check className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <X className="w-5 h-5 text-red-600" />
-                      )}
-                    </div>
                     <div>
                       <span className="font-medium">Barangay Clearance: <span className="text-red-500">*</span></span>
                       <p className="text-sm text-gray-600">
-                        {formData.barangay_clearance ? formData.barangay_clearance.name : 
-                         formData.barangay_clearance_id ? 'ID Provided' : 'File or ID required'}
+                        {formData.barangay_clearance ? formData.barangay_clearance.name : 'Required'}
                       </p>
-                      <p className="text-xs text-red-500 font-semibold">
-                        * Either file upload OR ID number must be provided
-                      </p>
+                      <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
                     </div>
                   </div>
-                </div>
-                
-                {/* Radio buttons to choose method */}
-                <div className="p-3 bg-gray-50 border-b">
-                  <label className="block text-sm font-medium mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                    Choose verification method:
-                  </label>
-                  <div className="flex gap-6">
-                    <label className="flex items-center cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer">
                       <input
-                        type="radio"
-                        name="barangay_method"
-                        value="upload"
-                        checked={barangayClearanceMethod === 'upload'}
-                        onChange={(e) => setBarangayClearanceMethod(e.target.value)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        type="file"
+                        name="barangay_clearance"
+                        onChange={handleFile}
+                        accept=".pdf,.jpg,.png,.doc,.docx"
+                        className="hidden"
+                        required
                       />
-                      <span className="ml-2 text-sm" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                        Upload Document (AI Verification)
-                      </span>
-                    </label>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="barangay_method"
-                        value="id"
-                        checked={barangayClearanceMethod === 'id'}
-                        onChange={(e) => setBarangayClearanceMethod(e.target.value)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-sm" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                        Enter ID Number (API Verification)
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* File Upload Section - shown when 'upload' is selected */}
-                {barangayClearanceMethod === 'upload' && (
-                  <>
-                    <div className="p-3 bg-white">
-                      <div className="flex items-center gap-2">
-                        <label className="cursor-pointer">
-                          <input
-                            type="file"
-                            name="barangay_clearance"
-                            onChange={handleFile}
-                            accept=".pdf,.jpg,.png,.doc,.docx"
-                            className="hidden"
-                          />
-                          <div className={`flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${
-                            !formData.barangay_clearance ? 'border-gray-300' : 'border-green-200 bg-green-50'
-                          }`} style={{ color: COLORS.secondary }}>
-                            <Upload className="w-4 h-4" />
-                            {formData.barangay_clearance ? 'Change File' : 'Upload Document'}
-                          </div>
-                        </label>
-                        {formData.barangay_clearance && (
-                          <>
-                            <span className="text-sm text-gray-600">{formData.barangay_clearance.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => previewFile(formData.barangay_clearance)}
-                              className="flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border border-gray-300"
-                              style={{ color: COLORS.secondary }}
-                            >
-                              <Eye className="w-4 h-4" />
-                              Preview
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => verifyDocument('barangay_clearance', formData.barangay_clearance)}
-                              disabled={documentVerification.barangay_clearance.isVerifying}
-                              className={`flex items-center gap-1 px-3 py-2 text-sm rounded transition-colors duration-300 border ${
-                                documentVerification.barangay_clearance.isVerified 
-                                  ? 'bg-green-100 border-green-500 text-green-700' 
-                                  : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
-                              }`}
-                            >
-                              {documentVerification.barangay_clearance.isVerifying ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
-                              ) : documentVerification.barangay_clearance.isVerified ? (
-                                <><Check className="w-4 h-4" /> Verified</>
-                              ) : (
-                                <><Shield className="w-4 h-4" /> Verify with AI</>
-                              )}
-                            </button>
-                          </>
-                        )}
+                      <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.barangay_clearance ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
+                        <Upload className="w-4 h-4" />
+                        {formData.barangay_clearance ? 'Change' : 'Upload'}
                       </div>
-                    </div>
-                    
-                    {/* Progress percentage for barangay clearance file verification */}
-                    {formData.barangay_clearance && documentVerification.barangay_clearance.isVerifying && (
-                      <div className="px-3 pb-3">
-                        <div className="flex items-center justify-between text-xs text-blue-600">
-                          <span>Verifying document with AI...</span>
-                          <span>{documentVerification.barangay_clearance.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                          <div 
-                            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                            style={{ width: `${documentVerification.barangay_clearance.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* ID Input Section - shown when 'id' is selected */}
-                {barangayClearanceMethod === 'id' && (
-                  <div className="p-3 bg-white">
-                    <label className="block text-sm font-medium mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                      Barangay Clearance ID/Applicant ID:
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        name="barangay_clearance_id"
-                        value={formData.barangay_clearance_id}
-                        onChange={handleChange}
-                        placeholder="Enter Barangay Clearance Applicant ID"
-                        className="flex-1 p-2 border border-gray-300 rounded"
-                        style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
-                      />
-                      {formData.barangay_clearance_id && (
+                    {formData.barangay_clearance && (
+                      <>
                         <button
                           type="button"
-                          onClick={verifyBarangayClearanceId}
-                          disabled={verifyingBarangayId}
-                          className={`flex items-center gap-1 px-4 py-2 text-sm rounded transition-colors duration-300 border ${
-                            validatedBarangayIds[formData.barangay_clearance_id]
+                          onClick={() => previewFile(formData.barangay_clearance)}
+                          className="flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300"
+                          style={{ color: COLORS.secondary }}
+                        >
+                          <Eye className="w-4 h-4" />
+                          Preview
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => verifyDocument('barangay_clearance', formData.barangay_clearance)}
+                          disabled={documentVerification.barangay_clearance.isVerifying}
+                          className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors duration-300 border ${
+                            documentVerification.barangay_clearance.isVerified 
                               ? 'bg-green-100 border-green-500 text-green-700' 
                               : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
                           }`}
                         >
-                          {verifyingBarangayId ? (
+                          {documentVerification.barangay_clearance.isVerifying ? (
                             <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
-                          ) : validatedBarangayIds[formData.barangay_clearance_id] ? (
+                          ) : documentVerification.barangay_clearance.isVerified ? (
                             <><Check className="w-4 h-4" /> Verified</>
                           ) : (
-                            <><Search className="w-4 h-4" /> Verify with API</>
+                            <><Shield className="w-4 h-4" /> Verify</>
                           )}
                         </button>
-                      )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Progress percentage for barangay clearance verification */}
+                {formData.barangay_clearance && documentVerification.barangay_clearance.isVerifying && (
+                  <div className="p-3 border-l border-r border-b border-gray-300 rounded-b-lg bg-blue-50">
+                    <div className="flex items-center justify-between text-xs text-blue-600">
+                      <span>Verifying document...</span>
+                      <span>{documentVerification.barangay_clearance.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div 
+                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${documentVerification.barangay_clearance.progress}%` }}
+                      ></div>
                     </div>
                   </div>
                 )}
-
-                <div className="p-3 bg-gray-50">
-                  <p className="text-xs">
-                    <span className={`font-medium ${
-                      (documentVerification.barangay_clearance?.isVerified || validatedBarangayIds[formData.barangay_clearance_id]) ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {(documentVerification.barangay_clearance?.isVerified || validatedBarangayIds[formData.barangay_clearance_id])
-                        ? '✓ Requirement satisfied - Verified' 
-                        : (formData.barangay_clearance || formData.barangay_clearance_id)
-                          ? '⚠ Please verify the document or ID to proceed'
-                          : '⚠ Please provide either the document or ID number'}
-                    </span>
-                  </p>
-                </div>
-              </div>
 
               <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
                 <div className="flex items-center">

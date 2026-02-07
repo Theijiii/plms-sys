@@ -23,6 +23,7 @@ import OccupancyPermit from "./pages/user/BuildingPermit/OccupancyPermit"
 import ProfessionalRegistration from "./pages/user/BuildingPermit/ProfessionalRegistration"
 import FranchisePermitType from "./pages/user/FranchisePermit/FranchisePermitType"
 import FranchiseNew from "./pages/user/FranchisePermit/FranchiseNew"
+import FranchiseRenewal from "./pages/user/FranchisePermit/FranchiseRenewal"
 
 
 import BarangayNew from "./pages/user/BarangayPermit/BarangayNew"
@@ -99,6 +100,7 @@ function App() {
 
           {/* Franchise routes */}
           <Route path="franchise/new" element={<FranchiseNew />} />
+          <Route path="franchise/renew" element={<FranchiseRenewal />} />
           <Route path="franchise/type" element={<FranchisePermitType />} />
 
           {/* Barangay routes */}

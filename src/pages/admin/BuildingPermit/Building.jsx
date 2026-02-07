@@ -265,45 +265,151 @@ export default function BuildingPermitApplication() {
     }
   };
 
-  const handleApprove = () => {
-    Swal.fire({
-      title: 'Approve this application?',
-      text: 'This will mark the building permit as approved.',
+  const handleApprove = async () => {
+    if (!selectedPermit) return;
+
+    const result = await Swal.fire({
+      title: 'Approve Permit?',
+      html: `
+        <div class="text-left">
+          <p class="mb-2">You are about to approve this building permit application:</p>
+          <div class="bg-gray-50 p-3 rounded-lg mb-3">
+            <p class="text-sm"><strong>Application ID:</strong> ${selectedPermit.id}</p>
+            <p class="text-sm"><strong>Applicant:</strong> ${selectedPermit.full_name}</p>
+            <p class="text-sm"><strong>Permit Group:</strong> ${selectedPermit.permit_group}</p>
+          </div>
+          <p class="text-sm text-gray-600">This action will approve the application.</p>
+        </div>
+      `,
       icon: 'question',
       input: 'textarea',
-      inputLabel: 'Notes (optional)',
-      inputPlaceholder: 'Add approval notes...',
+      inputLabel: 'Add approval notes (optional)',
+      inputPlaceholder: 'Enter any additional notes...',
+      inputValue: actionComment,
       showCancelButton: true,
-      confirmButtonText: 'Approve',
+      confirmButtonText: 'Yes, Approve',
+      cancelButtonText: 'Cancel',
       confirmButtonColor: '#4CAF50',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Approved', remarks: result.value || p.remarks } : p));
-        setSelectedPermit(prev => ({ ...prev, status: 'Approved' }));
-        Swal.fire('Approved!', 'The permit has been approved.', 'success');
+      cancelButtonColor: '#6b7280',
+      customClass: {
+        popup: 'text-left',
+        htmlContainer: 'text-left'
       }
     });
+
+    if (result.isConfirmed) {
+      const notes = result.value || actionComment;
+      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Approved', remarks: notes || p.remarks } : p));
+      setSelectedPermit(prev => ({ ...prev, status: 'Approved', remarks: notes || prev.remarks }));
+      setActionComment('');
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Permit approved successfully!',
+        confirmButtonColor: '#4CAF50',
+        timer: 2000,
+        showConfirmButton: true
+      });
+    }
   };
 
-  const handleReject = () => {
-    Swal.fire({
-      title: 'Reject this application?',
-      text: 'This will mark the building permit as rejected.',
+  const handleReject = async () => {
+    if (!selectedPermit) return;
+
+    const result = await Swal.fire({
+      title: 'Reject Application?',
+      html: `
+        <div class="text-left">
+          <p class="mb-2">You are about to reject this building permit application:</p>
+          <div class="bg-gray-50 p-3 rounded-lg mb-3">
+            <p class="text-sm"><strong>Application ID:</strong> ${selectedPermit.id}</p>
+            <p class="text-sm"><strong>Applicant:</strong> ${selectedPermit.full_name}</p>
+            <p class="text-sm"><strong>Permit Group:</strong> ${selectedPermit.permit_group}</p>
+          </div>
+          <p class="text-sm text-red-600">Please provide a reason for rejection.</p>
+        </div>
+      `,
       icon: 'warning',
       input: 'textarea',
-      inputLabel: 'Reason for rejection',
-      inputPlaceholder: 'Enter rejection reason...',
-      inputValidator: (value) => { if (!value) return 'Please provide a reason for rejection.'; },
+      inputLabel: 'Reason for rejection (required)',
+      inputPlaceholder: 'Enter the reason for rejecting this application...',
+      inputValue: actionComment,
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You must provide a reason for rejection!';
+        }
+      },
       showCancelButton: true,
-      confirmButtonText: 'Reject',
+      confirmButtonText: 'Yes, Reject',
+      cancelButtonText: 'Cancel',
       confirmButtonColor: '#E53935',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Rejected', remarks: result.value || p.remarks } : p));
-        setSelectedPermit(prev => ({ ...prev, status: 'Rejected' }));
-        Swal.fire('Rejected', 'The permit has been rejected.', 'success');
+      cancelButtonColor: '#6b7280',
+      customClass: {
+        popup: 'text-left',
+        htmlContainer: 'text-left'
       }
     });
+
+    if (result.isConfirmed) {
+      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Rejected', remarks: result.value || p.remarks } : p));
+      setSelectedPermit(prev => ({ ...prev, status: 'Rejected', remarks: result.value || prev.remarks }));
+      setActionComment('');
+      Swal.fire({
+        icon: 'success',
+        title: 'Application Rejected',
+        text: 'The permit has been rejected.',
+        confirmButtonColor: '#E53935',
+        timer: 2000,
+        showConfirmButton: true
+      });
+    }
+  };
+
+  const handleStatusUpdate = async (status, title, message, color = '#4CAF50') => {
+    if (!selectedPermit) return;
+
+    const result = await Swal.fire({
+      title: title,
+      html: `
+        <div class="text-left">
+          <p class="mb-2">${message}</p>
+          <div class="bg-gray-50 p-3 rounded-lg mb-3">
+            <p class="text-sm"><strong>Application ID:</strong> ${selectedPermit.id}</p>
+            <p class="text-sm"><strong>Applicant:</strong> ${selectedPermit.full_name}</p>
+            <p class="text-sm"><strong>Permit Group:</strong> ${selectedPermit.permit_group}</p>
+          </div>
+          <p class="text-sm text-gray-600">Add notes about this status update (optional).</p>
+        </div>
+      `,
+      icon: 'question',
+      input: 'textarea',
+      inputLabel: 'Status update notes',
+      inputPlaceholder: 'Enter any relevant notes...',
+      inputValue: actionComment,
+      showCancelButton: true,
+      confirmButtonText: 'Update Status',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: color,
+      cancelButtonColor: '#6b7280',
+      customClass: {
+        popup: 'text-left',
+      }
+    });
+
+    if (result.isConfirmed) {
+      const notes = result.value || '';
+      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: status, remarks: notes || p.remarks } : p));
+      setSelectedPermit(prev => ({ ...prev, status: status, remarks: notes || prev.remarks }));
+      setActionComment('');
+      Swal.fire({
+        icon: 'success',
+        title: 'Status Updated!',
+        text: `Status changed to ${status}`,
+        confirmButtonColor: color,
+        timer: 2000,
+        showConfirmButton: true
+      });
+    }
   };
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 25, 300));
@@ -691,17 +797,41 @@ export default function BuildingPermitApplication() {
                 <textarea value={actionComment} onChange={(e) => setActionComment(e.target.value)} placeholder="Add a comment..." className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent resize-none" rows="3" />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 pt-6 border-t-4 border-gray-200 dark:border-slate-600">
-                <button onClick={handleApprove} className="flex-1 min-w-[120px] px-6 py-3 bg-gradient-to-r from-[#4CAF50] to-[#45a049] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2">
-                  <CheckCircle className="w-5 h-5" /> Approve
-                </button>
-                <button onClick={handleReject} className="flex-1 min-w-[120px] px-6 py-3 bg-gradient-to-r from-[#E53935] to-[#d32f2f] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2">
-                  <XCircle className="w-5 h-5" /> Reject
-                </button>
-                <button onClick={closeModal} className="flex-1 min-w-[120px] px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2">
-                  <X className="w-5 h-5" /> Close
-                </button>
+              {/* Action Buttons Section */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-gray-200 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                    <AlertCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Application Actions</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button 
+                    onClick={handleApprove} 
+                    className="px-6 py-3 bg-gradient-to-r from-[#4CAF50] to-[#45a049] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Approve
+                  </button>
+                  <button 
+                    onClick={handleReject} 
+                    className="px-6 py-3 bg-gradient-to-r from-[#E53935] to-[#d32f2f] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" /> Reject
+                  </button>
+                  <button 
+                    onClick={() => handleStatusUpdate('Under Review', 'Set to Under Review?', 'This will mark the application as under review.', '#4A90E2')}
+                    className="px-6 py-3 bg-gradient-to-r from-[#4A90E2] to-[#357ABD] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
+                  >
+                    <Clock className="w-5 h-5" /> Under Review
+                  </button>
+                  <button 
+                    onClick={closeModal} 
+                    className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
+                  >
+                    <X className="w-5 h-5" /> Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
