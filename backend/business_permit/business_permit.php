@@ -417,37 +417,8 @@ try {
     
     $stmt->close();
     
-    // Insert into application_overview for tracking
-    $businessName = $postData['business_name'] ?? '';
-    $lastName = $postData['last_name'] ?? '';
-    $firstName = $postData['first_name'] ?? '';
-    $barangayValue = $postData['barangay'] ?? '';
-    $contactNumber = $postData['contact_number'] ?? '';
-    $permitType = $postData['permit_type'] ?? 'NEW';
-    
-    $overviewSql = "INSERT INTO application_overview 
-                    (permit_id, applicant_id, application_date, permit_type, status, 
-                     business_name, owner_last_name, owner_first_name, barangay, contact_number, submission_date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-    
-    $overviewStmt = $conn->prepare($overviewSql);
-    if ($overviewStmt) {
-        $overviewStmt->bind_param(
-            "isssssssss", 
-            $permit_id, 
-            $applicant_id, 
-            $application_date, 
-            $permitType, 
-            $status,
-            $businessName,
-            $lastName,
-            $firstName,
-            $barangayValue,
-            $contactNumber
-        );
-        $overviewStmt->execute();
-        $overviewStmt->close();
-    }
+    // application_overview is a VIEW on business_permit_applications,
+    // so no separate INSERT is needed — the view auto-reflects the data.
     
     ob_clean();
     echo json_encode([

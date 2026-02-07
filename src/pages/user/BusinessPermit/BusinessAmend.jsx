@@ -297,18 +297,9 @@ export default function BusPermitType() {
         [name]: file || null
       }));
     } else {
-      // Validate contact number starts with 09
+      // Clean contact number to digits only
       if (name === 'contact_number') {
         const cleaned = value.replace(/\D/g, '');
-        if (cleaned.length > 0 && !cleaned.startsWith('09')) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Invalid Contact Number',
-            text: 'Contact number must start with 09',
-            confirmButtonColor: '#4A90E2'
-          });
-          return;
-        }
         setFormData(prev => ({
           ...prev,
           [name]: cleaned
@@ -377,7 +368,11 @@ export default function BusPermitType() {
       if (!formData.business_name.trim()) newErrors.business_name = 'Business name is required';
       if (!formData.business_type.trim()) newErrors.business_type = 'Business type is required';
       if (!formData.contact_person.trim()) newErrors.contact_person = 'Contact person is required';
-      if (!formData.contact_number.trim()) newErrors.contact_number = 'Contact number is required';
+      if (!formData.contact_number.trim()) {
+        newErrors.contact_number = 'Contact number is required';
+      } else if (!formData.contact_number.startsWith('09') || formData.contact_number.length !== 11) {
+        newErrors.contact_number = 'Contact number must start with 09 and be 11 digits';
+      }
       
       // Type-specific validations
       if (selectedType === 'CHANGE_BUSINESS_NAME') {

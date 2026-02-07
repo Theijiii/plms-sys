@@ -244,19 +244,9 @@ export default function BusinessNew() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Validate contact number starts with 09
+    // Clean contact number to digits only
     if (name === 'contact_number') {
-      // Only allow numbers
       const cleaned = value.replace(/\D/g, '');
-      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Invalid Contact Number',
-          text: 'Contact number must start with 09',
-          confirmButtonColor: '#4A90E2'
-        });
-        return;
-      }
       setFormData((prev) => ({ ...prev, [name]: cleaned }));
       return;
     }
@@ -1283,7 +1273,11 @@ export default function BusinessNew() {
       }
 
       if (isEmpty(formData.date_of_birth)) missing.push("Date of Birth");
-      if (isEmpty(formData.contact_number)) missing.push("Contact Number");
+      if (isEmpty(formData.contact_number)) {
+        missing.push("Contact Number");
+      } else if (!formData.contact_number.startsWith('09') || formData.contact_number.length !== 11) {
+        missing.push("Contact Number (must start with 09 and be 11 digits)");
+      }
       if (isEmpty(formData.email_address)) missing.push("Email Address");
       if (isEmpty(formData.home_address)) missing.push("Home Address");
       if (isEmpty(formData.valid_id_type)) missing.push("Valid ID Type");
