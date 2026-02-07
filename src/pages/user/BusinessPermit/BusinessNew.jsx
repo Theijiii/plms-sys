@@ -104,7 +104,7 @@ export default function BusinessNew() {
     owner_last_name: "",
     owner_first_name: "",
     owner_middle_name: "",
-    owner_type: "",
+    owner_type: "Individual",
     citizenship: "",
     corp_filipino_percent: 0,
     corp_foreign_percent: 0,
@@ -2751,80 +2751,155 @@ export default function BusinessNew() {
                   </div>
                 )}
 
-              <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
-                <div className="flex items-center">
-                  <div>
-                    <span className="font-medium">BIR Certificate of Registration: <span className="text-red-500">*</span></span>
-                    <p className="text-sm text-gray-600">
-                      {formData.bir_certificate ? formData.bir_certificate.name : 'Required'}
-                    </p>
-                    <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      name="bir_certificate"
-                      onChange={handleFile}
-                      accept=".pdf,.jpg,.png,.doc,.docx"
-                      className="hidden"
-                      required
-                    />
-                    <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.bir_certificate ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
-                      <Upload className="w-4 h-4" />
-                      {formData.bir_certificate ? 'Change' : 'Upload'}
-                    </div>
-                  </label>
-                  {formData.bir_certificate && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => previewFile(formData.bir_certificate)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300"
-                        style={{ color: COLORS.secondary }}
-                      >
-                        <Eye className="w-4 h-4" />
-                        Preview
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => verifyDocument('bir_certificate', formData.bir_certificate)}
-                        disabled={documentVerification.bir_certificate.isVerifying}
-                        className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors duration-300 border ${
-                          documentVerification.bir_certificate.isVerified 
-                            ? 'bg-green-100 border-green-500 text-green-700' 
-                            : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
-                        }`}
-                      >
-                        {documentVerification.bir_certificate.isVerifying ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
-                        ) : documentVerification.bir_certificate.isVerified ? (
-                          <><Check className="w-4 h-4" /> Verified</>
-                        ) : (
-                          <><Shield className="w-4 h-4" /> Verify</>
-                        )}
-                      </button>
-                    </>
-                  )}
+            <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
+              <div className="flex items-center">
+                <div>
+                  <span className="font-medium">Owner Valid ID: <span className="text-red-500">*</span></span>
+                  <p className="text-sm text-gray-600">
+                    {formData.owner_valid_id ? formData.owner_valid_id.name : 'Required'}
+                  </p>
+                  <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
                 </div>
               </div>
-              
-              {/* Progress percentage for BIR certificate verification */}
-              {formData.bir_certificate && documentVerification.bir_certificate.isVerifying && (
-                <div className="p-3 border-l border-r border-b border-gray-300 rounded-b-lg bg-blue-50">
-                  <div className="flex items-center justify-between text-xs text-blue-600">
-                    <span>Verifying document...</span>
-                    <span>{documentVerification.bir_certificate.progress}%</span>
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    name="owner_valid_id"
+                    onChange={handleFile}
+                    accept=".pdf,.jpg,.png,.doc,.docx"
+                    className="hidden"
+                    required
+                  />
+                  <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.owner_valid_id ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
+                    <Upload className="w-4 h-4" />
+                    {formData.owner_valid_id ? 'Change' : 'Upload'}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                    <div 
-                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                      style={{ width: `${documentVerification.bir_certificate.progress}%` }}
-                    ></div>
-                  </div>
+                </label>
+                {formData.owner_valid_id && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => previewFile(formData.owner_valid_id)}
+                      className="flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300"
+                      style={{ color: COLORS.secondary }}
+                    >
+                      <Eye className="w-4 h-4" />
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => verifyDocument('owner_valid_id', formData.owner_valid_id)}
+                      disabled={documentVerification.owner_valid_id.isVerifying}
+                      className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors duration-300 border ${
+                        documentVerification.owner_valid_id.isVerified 
+                          ? 'bg-green-100 border-green-500 text-green-700' 
+                          : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
+                      }`}
+                    >
+                      {documentVerification.owner_valid_id.isVerifying ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                      ) : documentVerification.owner_valid_id.isVerified ? (
+                        <><Check className="w-4 h-4" /> Verified</>
+                      ) : (
+                        <><Shield className="w-4 h-4" /> Verify</>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Progress percentage for owner valid ID verification */}
+            {formData.owner_valid_id && documentVerification.owner_valid_id.isVerifying && (
+              <div className="p-3 border-l border-r border-b border-gray-300 rounded-b-lg bg-blue-50">
+                <div className="flex items-center justify-between text-xs text-blue-600">
+                  <span>Verifying document...</span>
+                  <span>{documentVerification.owner_valid_id.progress}%</span>
                 </div>
-              )}
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div 
+                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+                    style={{ width: `${documentVerification.owner_valid_id.progress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
+              <div className="flex items-center">
+                <div>
+                  <span className="font-medium">BIR Certificate of Registration: <span className="text-red-500">*</span></span>
+                  <p className="text-sm text-gray-600">
+                    {formData.bir_certificate ? formData.bir_certificate.name : 'Required'}
+                  </p>
+                  <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    name="bir_certificate"
+                    onChange={handleFile}
+                    accept=".pdf,.jpg,.png,.doc,.docx"
+                    className="hidden"
+                    required
+                  />
+                  <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.bir_certificate ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
+                    <Upload className="w-4 h-4" />
+                    {formData.bir_certificate ? 'Change' : 'Upload'}
+                  </div>
+                </label>
+                {formData.bir_certificate && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => previewFile(formData.bir_certificate)}
+                      className="flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300"
+                      style={{ color: COLORS.secondary }}
+                    >
+                      <Eye className="w-4 h-4" />
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => verifyDocument('bir_certificate', formData.bir_certificate)}
+                      disabled={documentVerification.bir_certificate.isVerifying}
+                      className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors duration-300 border ${
+                        documentVerification.bir_certificate.isVerified 
+                          ? 'bg-green-100 border-green-500 text-green-700' 
+                          : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
+                      }`}
+                    >
+                      {documentVerification.bir_certificate.isVerifying ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                      ) : documentVerification.bir_certificate.isVerified ? (
+                        <><Check className="w-4 h-4" /> Verified</>
+                      ) : (
+                        <><Shield className="w-4 h-4" /> Verify</>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Progress percentage for BIR certificate verification */}
+            {formData.bir_certificate && documentVerification.bir_certificate.isVerifying && (
+              <div className="p-3 border-l border-r border-b border-gray-300 rounded-b-lg bg-blue-50">
+                <div className="flex items-center justify-between text-xs text-blue-600">
+                  <span>Verifying document...</span>
+                  <span>{documentVerification.bir_certificate.progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                  <div 
+                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+                    style={{ width: `${documentVerification.bir_certificate.progress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}  
 
               <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
                 <div className="flex items-center">
@@ -2971,81 +3046,6 @@ export default function BusinessNew() {
                     <div 
                       className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
                       style={{ width: `${documentVerification.fsic.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
-                <div className="flex items-center">
-                  <div>
-                    <span className="font-medium">Owner Valid ID: <span className="text-red-500">*</span></span>
-                    <p className="text-sm text-gray-600">
-                      {formData.owner_valid_id ? formData.owner_valid_id.name : 'Required'}
-                    </p>
-                    <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      name="owner_valid_id"
-                      onChange={handleFile}
-                      accept=".pdf,.jpg,.png,.doc,.docx"
-                      className="hidden"
-                      required
-                    />
-                    <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.owner_valid_id ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
-                      <Upload className="w-4 h-4" />
-                      {formData.owner_valid_id ? 'Change' : 'Upload'}
-                    </div>
-                  </label>
-                  {formData.owner_valid_id && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => previewFile(formData.owner_valid_id)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300"
-                        style={{ color: COLORS.secondary }}
-                      >
-                        <Eye className="w-4 h-4" />
-                        Preview
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => verifyDocument('owner_valid_id', formData.owner_valid_id)}
-                        disabled={documentVerification.owner_valid_id.isVerifying}
-                        className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors duration-300 border ${
-                          documentVerification.owner_valid_id.isVerified 
-                            ? 'bg-green-100 border-green-500 text-green-700' 
-                            : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
-                        }`}
-                      >
-                        {documentVerification.owner_valid_id.isVerifying ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
-                        ) : documentVerification.owner_valid_id.isVerified ? (
-                          <><Check className="w-4 h-4" /> Verified</>
-                        ) : (
-                          <><Shield className="w-4 h-4" /> Verify</>
-                        )}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              {/* Progress percentage for owner valid ID verification */}
-              {formData.owner_valid_id && documentVerification.owner_valid_id.isVerifying && (
-                <div className="p-3 border-l border-r border-b border-gray-300 rounded-b-lg bg-blue-50">
-                  <div className="flex items-center justify-between text-xs text-blue-600">
-                    <span>Verifying document...</span>
-                    <span>{documentVerification.owner_valid_id.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                    <div 
-                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                      style={{ width: `${documentVerification.owner_valid_id.progress}%` }}
                     ></div>
                   </div>
                 </div>

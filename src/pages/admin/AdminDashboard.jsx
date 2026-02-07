@@ -172,6 +172,51 @@ export default function AdminDashboard() {
     return filtered;
   }, [dashboardData, typeFilter, searchTerm]);
 
+  // Most recent application (unfiltered)
+  const mostRecentApplication = useMemo(() => {
+    if (!dashboardData) return null;
+
+    const all = [
+      ...(dashboardData.business?.recent || []),
+      ...(dashboardData.franchise?.recent || []),
+      ...(dashboardData.barangay?.recent || []),
+      ...(dashboardData.building?.recent || [])
+    ];
+
+    if (all.length === 0) return null;
+
+    // Sort by date descending and get first
+    all.sort((a, b) => {
+      const da = new Date(a.date || 0);
+      const db = new Date(b.date || 0);
+      return db - da;
+    });
+
+    return all[0];
+  }, [dashboardData]);
+
+  // Today's applications
+  const todaysApplications = useMemo(() => {
+    if (!dashboardData) return [];
+
+    const all = [
+      ...(dashboardData.business?.recent || []),
+      ...(dashboardData.franchise?.recent || []),
+      ...(dashboardData.barangay?.recent || []),
+      ...(dashboardData.building?.recent || [])
+    ];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return all.filter(app => {
+      if (!app.date) return false;
+      const appDate = new Date(app.date);
+      appDate.setHours(0, 0, 0, 0);
+      return appDate.getTime() === today.getTime();
+    });
+  }, [dashboardData]);
+
   // Monthly trend data (aggregated across all types)
   const monthlyTrendData = useMemo(() => {
     if (!dashboardData) return { labels: [], applications: [], approvals: [], rejections: [] };
@@ -1123,6 +1168,103 @@ export default function AdminDashboard() {
                   },
                 }}
               />
+            </div>
+          </div>
+
+          {/* Most Recent & Today's Applications */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Most Recent Application */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E9E7E7]">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold text-[#4D4A4A] font-montserrat">Most Recent Application</h4>
+                <Clock className="w-4 h-4 text-[#4CAF50]" />
+              </div>
+              {mostRecentApplication ? (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-mono font-semibold text-[#4D4A4A]">{mostRecentApplication.id}</p>
+                      <p className="text-xs text-[#4D4A4A] text-opacity-70 mt-1">{mostRecentApplication.permit_type} Permit</p>
+                    </div>
+                    <span
+                      className="px-2 py-1 text-xs font-medium rounded-full"
+                      style={{ 
+                        backgroundColor: `${STATUS_COLORS[mostRecentApplication.status] || '#4D4A4A'}15`, 
+                        color: STATUS_COLORS[mostRecentApplication.status] || '#4D4A4A' 
+                      }}
+                    >
+                      {mostRecentApplication.status}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center">
+                      <User className="w-4 h-4 text-[#4D4A4A] text-opacity-50 mr-2" />
+                      <span className="text-[#4D4A4A] truncate">{mostRecentApplication.applicant || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <FileText className="w-4 h-4 text-[#4D4A4A] text-opacity-50 mr-2" />
+                      <span className="text-[#4D4A4A] text-opacity-70 text-xs truncate">{mostRecentApplication.type || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 text-[#4D4A4A] text-opacity-50 mr-2" />
+                      <span className="text-[#4D4A4A] text-opacity-70 text-xs">{formatDate(mostRecentApplication.date)}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <FileText className="w-8 h-8 text-[#4D4A4A] text-opacity-30 mx-auto mb-2" />
+                  <p className="text-xs text-[#4D4A4A] text-opacity-60 font-poppins">No applications yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Today's Applications */}
+            <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E9E7E7]">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold text-[#4D4A4A] font-montserrat">Today's Applications</h4>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-[#4A90E2]" />
+                  <span className="text-lg font-bold text-[#4A90E2] font-montserrat">{todaysApplications.length}</span>
+                </div>
+              </div>
+              {todaysApplications.length > 0 ? (
+                <div className="space-y-2">
+                  {todaysApplications.slice(0, 3).map((app, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 bg-[#FBFBFB] rounded-lg border border-[#E9E7E7]">
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <div 
+                          className="w-2 h-2 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: PERMIT_COLORS[app.permit_type] || '#4D4A4A' }}
+                        ></div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-mono font-semibold text-[#4D4A4A] truncate">{app.id}</p>
+                          <p className="text-xs text-[#4D4A4A] text-opacity-70 truncate">{app.applicant}</p>
+                        </div>
+                      </div>
+                      <span
+                        className="px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ml-2"
+                        style={{ 
+                          backgroundColor: `${STATUS_COLORS[app.status] || '#4D4A4A'}15`, 
+                          color: STATUS_COLORS[app.status] || '#4D4A4A' 
+                        }}
+                      >
+                        {app.status}
+                      </span>
+                    </div>
+                  ))}
+                  {todaysApplications.length > 3 && (
+                    <p className="text-xs text-center text-[#4D4A4A] text-opacity-60 mt-2">
+                      +{todaysApplications.length - 3} more today
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Calendar className="w-8 h-8 text-[#4D4A4A] text-opacity-30 mx-auto mb-2" />
+                  <p className="text-xs text-[#4D4A4A] text-opacity-60 font-poppins">No applications today</p>
+                </div>
+              )}
             </div>
           </div>
 
