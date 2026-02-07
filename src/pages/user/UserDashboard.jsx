@@ -85,7 +85,7 @@ const SERVICES = [
   },
   {
     id: 2,
-    name: "BUSINESS PERMTIT APPLICATION",
+    name: "BUSINESS PERMIT APPLICATION",
     description: "Complete digital processing for new business permits and renewals with integrated payment system.",
     shortDescription: "Start or renew your business operations",
     icon: <Briefcase className="w-10 h-10" />,

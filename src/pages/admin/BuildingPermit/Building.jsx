@@ -797,41 +797,156 @@ export default function BuildingPermitApplication() {
                 <textarea value={actionComment} onChange={(e) => setActionComment(e.target.value)} placeholder="Add a comment..." className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent resize-none" rows="3" />
               </div>
 
-              {/* Action Buttons Section */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-gray-200 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
-                    <AlertCircle className="w-6 h-6 text-white" />
+              {/* Action Buttons Section - Redesigned */}
+              <div className="flex gap-4 justify-between pt-8 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl p-6 border-t-4 border-gray-300 dark:border-slate-600">
+                {/* Actions Dropdown - Show for all statuses except Rejected */}
+                {selectedPermit.status !== "Rejected" && (
+                  <div className="relative" ref={actionsRef}>
+                    <button
+                      onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium shadow-md hover:shadow-lg flex items-center gap-2"
+                    >
+                      Actions
+                      <svg className={`w-4 h-4 transition-transform ${showActionsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showActionsDropdown && (
+                      <div className="absolute left-0 bottom-full mb-2 w-72 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50 max-h-96 overflow-y-auto">
+                        {/* Processing Status Updates */}
+                        <div className="px-3 py-2 bg-gray-100 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
+                          <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Processing Steps</p>
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Under Review', 'Mark as Under Review', 'Application is now being reviewed by the team.', '#3B82F6');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <Search className="w-5 h-5 text-blue-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Under Review</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Document Verification', 'Document Verification', 'Documents are being verified for completeness and authenticity.', '#8B5CF6');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <FileText className="w-5 h-5 text-purple-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Document Verification</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Site Inspection Scheduled', 'Schedule Site Inspection', 'Site inspection has been scheduled for this building project.', '#0EA5E9');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-cyan-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <Building className="w-5 h-5 text-cyan-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Site Inspection Scheduled</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Payment Verification', 'Verify Payment', 'Payment is being verified.', '#F59E0B');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <File className="w-5 h-5 text-amber-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Payment Verification</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('For Manager Approval', 'Send for Manager Approval', 'Application is being sent to manager for approval.', '#6366F1');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <User className="w-5 h-5 text-indigo-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">For Manager Approval</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Permit Processing', 'Mark as Processing', 'Permit is being processed and prepared.', '#14B8A6');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-teal-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <FileText className="w-5 h-5 text-teal-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Permit Processing</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Ready for Release', 'Mark Ready for Release', 'Permit is ready for release to applicant.', '#10B981');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Ready for Release</span>
+                        </button>
+
+                        {/* Actions */}
+                        <div className="px-3 py-2 bg-gray-100 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
+                          <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Actions</p>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleStatusUpdate('Pending', 'Set to Pending', 'Mark this application as pending.', '#FDA811');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-yellow-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <AlertCircle className="w-5 h-5 text-yellow-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Mark as Pending</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleReject();
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-slate-600"
+                        >
+                          <X className="w-5 h-5 text-red-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">Reject Application</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setShowActionsDropdown(false);
+                            handleApprove();
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-green-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                        >
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <span className="font-medium text-gray-700 dark:text-gray-200">✓ Approve Permit</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Application Actions</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <button 
-                    onClick={handleApprove} 
-                    className="px-6 py-3 bg-gradient-to-r from-[#4CAF50] to-[#45a049] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle className="w-5 h-5" /> Approve
-                  </button>
-                  <button 
-                    onClick={handleReject} 
-                    className="px-6 py-3 bg-gradient-to-r from-[#E53935] to-[#d32f2f] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
-                  >
-                    <XCircle className="w-5 h-5" /> Reject
-                  </button>
-                  <button 
-                    onClick={() => handleStatusUpdate('Under Review', 'Set to Under Review?', 'This will mark the application as under review.', '#4A90E2')}
-                    className="px-6 py-3 bg-gradient-to-r from-[#4A90E2] to-[#357ABD] text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
-                  >
-                    <Clock className="w-5 h-5" /> Under Review
-                  </button>
-                  <button 
-                    onClick={closeModal} 
-                    className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:shadow-lg transition-all font-bold flex items-center justify-center gap-2"
-                  >
-                    <X className="w-5 h-5" /> Close
-                  </button>
-                </div>
+                )}
+
+                {/* Close Button - Always visible */}
+                <button 
+                  onClick={closeModal}
+                  className="px-8 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all font-medium shadow-md hover:shadow-lg flex items-center gap-2 ml-auto"
+                >
+                  <X className="w-5 h-5" />
+                  Close
+                </button>
               </div>
             </div>
           </div>

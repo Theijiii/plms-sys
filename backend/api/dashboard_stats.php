@@ -40,8 +40,8 @@ try {
             }
         }
 
-        // Recent 5
-        $result = $conn->query("SELECT permit_id, owner_first_name, owner_last_name, business_name, status, permit_type, date_submitted, application_date FROM business_permit_applications ORDER BY COALESCE(date_submitted, application_date) DESC LIMIT 5");
+        // All applications
+        $result = $conn->query("SELECT permit_id, owner_first_name, owner_last_name, business_name, status, permit_type, date_submitted, application_date FROM business_permit_applications ORDER BY COALESCE(date_submitted, application_date) DESC");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $response['business']['recent'][] = [
@@ -96,7 +96,7 @@ try {
             }
         }
 
-        $result = $conn->query("SELECT application_id, first_name, last_name, status, permit_type, date_submitted, created_at FROM franchise_permit_applications ORDER BY COALESCE(created_at, date_submitted) DESC LIMIT 5");
+        $result = $conn->query("SELECT application_id, first_name, last_name, status, permit_type, date_submitted, created_at FROM franchise_permit_applications ORDER BY COALESCE(created_at, date_submitted) DESC");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $response['franchise']['recent'][] = [
@@ -148,7 +148,7 @@ try {
             }
         }
 
-        $result = $conn->query("SELECT permit_id, first_name, last_name, status, purpose, created_at, application_date FROM barangay_permit ORDER BY COALESCE(created_at, application_date) DESC LIMIT 5");
+        $result = $conn->query("SELECT permit_id, first_name, last_name, status, purpose, created_at, application_date FROM barangay_permit ORDER BY COALESCE(created_at, application_date) DESC");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $response['barangay']['recent'][] = [
@@ -214,7 +214,7 @@ try {
             }
         }
 
-        $result = $conn->query("SELECT app.application_id, a.first_name, a.last_name, app.permit_group, app.proposed_date_of_construction, app.total_estimated_cost FROM application app JOIN applicant a ON app.applicant_id = a.applicant_id ORDER BY app.application_id DESC LIMIT 5");
+        $result = $conn->query("SELECT app.application_id, a.first_name, a.last_name, app.permit_group, app.proposed_date_of_construction, app.total_estimated_cost FROM application app JOIN applicant a ON app.applicant_id = a.applicant_id ORDER BY app.application_id DESC");
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $response['building']['recent'][] = [

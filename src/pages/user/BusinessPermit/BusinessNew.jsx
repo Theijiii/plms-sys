@@ -1464,6 +1464,11 @@ export default function BusinessNew() {
           return;
         }
         
+        // Skip barangay_clearance if using barangay_clearance_id instead
+        if (fieldName === 'barangay_clearance' && !value && formData.barangay_clearance_id) {
+          return;
+        }
+        
         if (value !== null && value !== undefined && value !== '') {
           if (typeof value === 'number') {
             formDataToSend.append(fieldName, value.toString());
@@ -1514,10 +1519,10 @@ export default function BusinessNew() {
         'has_owner_valid_id': !!formData.owner_valid_id,
         'has_id_picture': !!formData.id_picture,
         'has_official_receipt': !!formData.official_receipt_file,
-        'has_owner_scanned_id': !!formData.owner_scanned_id,
-        'has_representative_scanned_id': !!formData.representative_scanned_id,
+        'has_representative_scanned_id': formData.owner_type_declaration === 'Representative' && !!formData.representative_scanned_id,
         'has_dti_registration': !!formData.dti_registration,
-        'has_sec_registration': !!formData.sec_registration
+        'has_sec_registration': !!formData.sec_registration,
+        'has_sanitation_permit': isHealthRelatedBusiness() && !!formData.sanitation_permit_id
       };
 
       Object.entries(documentFlags).forEach(([key, value]) => {

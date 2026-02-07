@@ -344,9 +344,9 @@ try {
                 if (move_uploaded_file($fileData['tmp_name'], $target_path)) {
                     error_log("File uploaded successfully: " . $target_path);
                     
-                    // Save to application_documents table - using record_id as permit_id
+                    // Save to application_documents table - using record_id for foreign key
                     $doc_sql = "INSERT INTO application_documents (
-                        permit_id, document_type, document_name, 
+                        record_id, document_type, document_name, 
                         file_path, file_type, file_size, upload_date
                     ) VALUES (?, ?, ?, ?, ?, ?, NOW())";
                     
@@ -354,7 +354,7 @@ try {
                     if ($doc_stmt) {
                         $doc_stmt->bind_param(
                             'issssi',
-                            $new_record_id,  // Use the record_id as permit_id for foreign key
+                            $new_record_id,  // Use the record_id for foreign key reference
                             $document_type,
                             $original_name,
                             $target_path,
@@ -396,7 +396,7 @@ try {
             if (move_uploaded_file($signatureData['tmp_name'], $target_path)) {
                 // Save signature document record
                 $sig_sql = "INSERT INTO application_documents (
-                    permit_id, document_type, document_name, 
+                    record_id, document_type, document_name, 
                     file_path, file_type, file_size, upload_date
                 ) VALUES (?, 'Applicant Signature', ?, ?, ?, ?, NOW())";
                 
@@ -404,7 +404,7 @@ try {
                 if ($sig_stmt) {
                     $sig_stmt->bind_param(
                         'isssi',
-                        $new_record_id,  // Use the record_id as permit_id for foreign key
+                        $new_record_id,  // Use the record_id for foreign key reference
                         $original_name,
                         $target_path,
                         $signatureData['type'],
