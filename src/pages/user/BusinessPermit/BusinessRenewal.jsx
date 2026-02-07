@@ -1002,6 +1002,7 @@ export default function BusinessRenewal() {
                     name="permit_expiry"
                     value={formData.permit_expiry}
                     onChange={handleChange}
+                    min={currentDate}
                     className="p-3 border border-black rounded-lg w-full pl-10"
                     style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
                     required
@@ -2054,14 +2055,12 @@ export default function BusinessRenewal() {
             {formData.sanitation_permit ? (
               <Check className="w-5 h-5 text-green-600 mr-3" />
             ) : (
-              <div className="mr-3 w-5 h-5 flex items-center justify-center">
-                <span className="text-xs text-gray-500">Optional</span>
-              </div>
+              <X className="w-5 h-5 text-red-600 mr-3" />
             )}
             <div>
               <span className="font-medium">Sanitation Permit:</span>
               <p className="text-sm text-gray-600">
-                {formData.sanitation_permit ? formData.sanitation_permit.name : 'Optional'}
+                {formData.sanitation_permit ? formData.sanitation_permit.name : 'Optional (Recommended for health/food businesses)'}
               </p>
               {isHealthRelatedBusiness() && (
                 <p className="text-xs text-blue-600">* Recommended for health/food related businesses</p>
@@ -2109,7 +2108,7 @@ export default function BusinessRenewal() {
             <div>
               <span className="font-medium">Official Receipt of Payment: <span className="text-red-500">*</span></span>
               <p className="text-sm text-gray-600">
-                {formData.official_receipt_file ? formData.official_receipt_file.name : 'Optional'}
+                {formData.official_receipt_file ? formData.official_receipt_file.name : 'Required'}
               </p>
             </div>
           </div>

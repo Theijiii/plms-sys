@@ -22,8 +22,19 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
 
 $host = "localhost";
-$user = "root";
-$pass = "";
+
+// Database credentials for each permit type
+$business_user = "eplms_paul";
+$business_pass = "mypassword";
+
+$franchise_user = "eplms_kobe";
+$franchise_pass = "mypassword";
+
+$barangay_user = "eplms_karl";
+$barangay_pass = "mypassword";
+
+$building_user = "eplms_ella";
+$building_pass = "mypassword";
 
 $response = [
     'success' => false,
@@ -36,7 +47,7 @@ $response = [
 
 // ============ BUSINESS PERMIT ============
 try {
-    $conn = new mysqli($host, $user, $pass, "eplms_business_permit_db");
+    $conn = new mysqli($host, $business_user, $business_pass, "eplms_business_permit_db");
     if ($conn->connect_error) {
         $response['debug'][] = "Business DB connection failed: " . $conn->connect_error;
         error_log("Business DB connection error: " . $conn->connect_error);
@@ -98,7 +109,7 @@ try {
 
 // ============ FRANCHISE PERMIT ============
 try {
-    $conn = new mysqli($host, $user, $pass, "eplms_franchise_applications");
+    $conn = new mysqli($host, $franchise_user, $franchise_pass, "eplms_franchise_applications");
     if ($conn->connect_error) {
         $response['debug'][] = "Franchise DB connection failed: " . $conn->connect_error;
         error_log("Franchise DB connection error: " . $conn->connect_error);
@@ -156,7 +167,7 @@ try {
 
 // ============ BARANGAY PERMIT ============
 try {
-    $conn = new mysqli($host, $user, $pass, "eplms_barangay_permit_db");
+    $conn = new mysqli($host, $barangay_user, $barangay_pass, "eplms_barangay_permit_db");
     if ($conn->connect_error) {
         $response['debug'][] = "Barangay DB connection failed: " . $conn->connect_error;
         error_log("Barangay DB connection error: " . $conn->connect_error);
@@ -213,7 +224,7 @@ try {
 
 // ============ BUILDING PERMIT ============
 try {
-    $conn = new mysqli($host, $user, $pass, "eplms_building_permit_system");
+    $conn = new mysqli($host, $building_user, $building_pass, "eplms_building_permit_system");
     if ($conn->connect_error) {
         $response['debug'][] = "Building DB connection failed: " . $conn->connect_error;
         error_log("Building DB connection error: " . $conn->connect_error);

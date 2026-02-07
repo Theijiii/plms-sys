@@ -1445,9 +1445,28 @@ export default function BusinessNew() {
       const now = new Date();
       const currentDateTime = now.toISOString().split('T')[0] + ' ' + now.toTimeString().split(' ')[0];
       
+      // CRITICAL FIELDS that must always be sent (with defaults if empty)
+      const criticalFields = {
+        'owner_type': formData.owner_type || 'Individual',
+        'citizenship': formData.citizenship || '',
+        'business_nature': formData.business_nature || '',
+        'building_type': formData.building_type || '',
+        'operation_type': formData.operation_type || ''
+      };
+      
+      // Add critical fields first to ensure they're never missing (always send, even if empty)
+      Object.entries(criticalFields).forEach(([fieldName, value]) => {
+        formDataToSend.append(fieldName, String(value || ''));
+      });
+      
       // Add all form data with conditional logic
       Object.keys(formData).forEach((fieldName) => {
         const value = formData[fieldName];
+        
+        // Skip if already added as critical field
+        if (criticalFields.hasOwnProperty(fieldName)) {
+          return;
+        }
         
         // Skip sanitation_permit_id if business is not health-related
         if (fieldName === 'sanitation_permit_id' && !isHealthRelatedBusiness()) {
@@ -1673,7 +1692,6 @@ export default function BusinessNew() {
                   style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
                   required
                 >
-                  <option value="">Select owner type</option>
                   <option value="Individual">Individual</option>
                   <option value="Partnership">Partnership</option>
                   <option value="Corporation">Corporation</option>
