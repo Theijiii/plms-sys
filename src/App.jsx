@@ -41,6 +41,7 @@ import BusinessProcess from "./pages/admin/BusinessPermit/BusinessProcessing";
 import Building from "./pages/admin/BuildingPermit/Building";
 import BuildingDashboard from "./pages/admin/BuildingPermit/BuildingDashboard";
 import BuildingProcess from "./pages/admin/BuildingPermit/BuildingProcess";
+import Professionals from "./pages/admin/BuildingPermit/Professionals";
 
 import Franchise from "./pages/admin/FranchisePermit/Franchise";
 import FranchisePermitApplication from "./pages/admin/FranchisePermit/FranchisePermitApplication" 
@@ -173,6 +174,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="admin" allowedDepartments={['building', 'super']}>
                 <BuildingProcess />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="professionals" 
+            element={
+              <ProtectedRoute requiredRole="admin" allowedDepartments={['building', 'super']}>
+                <Professionals />
               </ProtectedRoute>
             } 
           />
