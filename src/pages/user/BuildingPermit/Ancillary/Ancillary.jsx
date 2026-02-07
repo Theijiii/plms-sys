@@ -5,7 +5,7 @@ import { ArrowRight, ArrowLeft, Droplets, Fence, Hammer, HardHat, Home, Radio, S
 
 const COLORS = { primary: '#4A90E2', secondary: '#000000', accent: '#FDA811', success: '#4CAF50', danger: '#E53935', background: '#FBFBFB', font: 'Montserrat, Arial, sans-serif' };
 const API_BASE = "/backend/building_permit/ancillary_permit.php";
-const BARANGAY_API = "https://e-plms.goserveph.com/backend/barangay_permit/admin_fetch.php";
+const BARANGAY_API = "/backend/barangay_permit/admin_fetch.php";
 const PROFESSIONAL_API = "/backend/building_permit/professional_registration.php";
 const labelStyle = { color: '#000000', fontFamily: 'Montserrat, Arial, sans-serif' };
 const inputCls = "p-3 border border-black rounded-lg w-full";
@@ -160,6 +160,11 @@ export default function AncillaryPermits() {
     setVerifyingBarangayId(true);
     try {
       const response = await fetch(BARANGAY_API);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       let permits = [];
       if (data.success && data.data) permits = data.data;
@@ -217,6 +222,11 @@ export default function AncillaryPermits() {
     setVerifyingProfessional(true);
     try {
       const response = await fetch(PROFESSIONAL_API);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       let registrations = [];
       if (data.success && data.data) registrations = data.data;
@@ -333,6 +343,11 @@ export default function AncillaryPermits() {
       if (formData.document_id) fd.append('document_id', formData.document_id);
       if (formData.signature_file) fd.append('signature_file', formData.signature_file);
       const response = await fetch(API_BASE, { method: 'POST', body: fd });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       if (result.success) {
         Swal.fire({ icon: 'success', title: 'Application Submitted!',

@@ -627,6 +627,11 @@ const handleSubmit = async () => {
       body: formDataToSend,
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseClone = response.clone();
     console.log('Response status:', response.status);
     console.log('Response headers:', response.headers);
     

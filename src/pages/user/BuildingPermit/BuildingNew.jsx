@@ -137,6 +137,10 @@ export default function BuildingNew() {
         body: submitData,
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {

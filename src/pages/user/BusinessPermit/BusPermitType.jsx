@@ -27,6 +27,11 @@ export default function BusPermitType({ business_permit_id }) {
   const verifyBarangayClearance = async (permitId) => {
     try {
       const response = await fetch('/backend/barangay_permit/admin_fetch.php');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success && Array.isArray(data.data)) {
@@ -45,6 +50,11 @@ export default function BusPermitType({ business_permit_id }) {
   const verifyApplicantId = async (applicantId) => {
     try {
       const response = await fetch('/backend/business_permit/admin_fetch.php');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success && Array.isArray(data.data)) {

@@ -765,9 +765,13 @@ const verifyBarangayClearance = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        clearance_id: formData.barangay_clearance_id
+        barangay_clearance_id: formData.barangay_clearance_id
       })
     });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     
     const data = await response.json();
     
@@ -1034,6 +1038,11 @@ const checkExistingPermit = async () => {
     
     try {
       const response = await fetch(`/backend/business_permit/admin_fetch.php`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       let permits = [];
@@ -1881,7 +1890,7 @@ const checkExistingPermit = async () => {
 
     setIsSubmitting(true);
     
-    const backendUrl = "http://localhost/plms-main/backend/franchise_permit/franchise_permit.php";
+    const backendUrl = "/backend/franchise_permit/franchise_permit.php";
     
     try {
       const formDataToSend = new FormData();
@@ -1917,6 +1926,10 @@ const checkExistingPermit = async () => {
         method: "POST",
         body: formDataToSend
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       const responseText = await response.text();
       let data;

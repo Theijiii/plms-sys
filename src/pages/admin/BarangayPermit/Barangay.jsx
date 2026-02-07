@@ -549,7 +549,7 @@ export default function BarangayPermitAnalytics() {
     // Ensure the URL is properly constructed as absolute
     let fileUrl = file.url;
     if (fileUrl && !fileUrl.startsWith('http')) {
-      fileUrl = `http://localhost/plms-main${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+      fileUrl = `${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
     }
     
     const fileWithType = {

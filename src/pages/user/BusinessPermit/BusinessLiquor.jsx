@@ -622,6 +622,11 @@ export default function LiquorPermitApplication() {
     
     try {
       const response = await fetch(`/backend/business_permit/admin_fetch.php`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success && data.data && data.data.length > 0) {
@@ -712,6 +717,11 @@ export default function LiquorPermitApplication() {
 
     try {
       const response = await fetch('/backend/barangay_permit/admin_fetch.php');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       let permits = [];
@@ -781,10 +791,20 @@ export default function LiquorPermitApplication() {
       // For NEW application: Check business permit
       if (formData.application_type === 'NEW') {
         let response = await fetch(`/backend/business_permit/admin_fetch.php?permit_number=${formData.existing_permit_number}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         let data = await response.json();
         
         if (!data.success || !data.data || data.data.length === 0) {
           response = await fetch(`/backend/business_permit/admin_fetch.php?search=${formData.existing_permit_number}`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
           data = await response.json();
         }
         
@@ -830,6 +850,11 @@ export default function LiquorPermitApplication() {
       else {
         // First try to check liquor permit
         let response = await fetch(`/backend/liquor_permit/check.php?permit_number=${formData.existing_permit_number}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         let data = await response.json();
         
         if (data.success && data.data) {
@@ -1172,7 +1197,12 @@ export default function LiquorPermitApplication() {
         body: formDataToSend,
       });
 
-      const responseText = await response.text();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseClone = response.clone();
+      const responseText = await responseClone.text();
       let data;
       try {
         data = JSON.parse(responseText);

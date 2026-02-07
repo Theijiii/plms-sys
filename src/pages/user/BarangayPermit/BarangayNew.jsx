@@ -838,10 +838,14 @@ export default function BarangayNew() {
 
       console.log("Submitting barangay permit application...");
 
-      const response = await fetch("http://localhost/plms-main/backend/barangay_permit/barangay_permit.php", {
+      const response = await fetch("/backend/barangay_permit/barangay_permit.php", {
         method: "POST",
         body: formDataToSend,
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const responseClone = response.clone();
       let data;

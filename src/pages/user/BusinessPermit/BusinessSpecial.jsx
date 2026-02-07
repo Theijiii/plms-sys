@@ -59,11 +59,15 @@ export default function BusinessSpecial() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/user/renewal-form/', {
+      const response = await fetch('/backend/business_permit/submit_renewal.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
       if (data.success) {

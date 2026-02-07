@@ -55,6 +55,10 @@ export default function PermitTracker() {
         }
       );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -404,6 +408,10 @@ export default function PermitTracker() {
         method: 'POST',
         body: formData
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
