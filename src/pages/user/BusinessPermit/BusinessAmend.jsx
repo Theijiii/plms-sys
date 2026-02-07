@@ -225,7 +225,7 @@ export default function BusPermitType() {
     // Declaration and Signature fields
     applicant_signature: '',
     date_submitted: getCurrentDate(),
-    date_submitted_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    date_submitted_time: new Date().toTimeString().split(' ')[0]
   });
 
   const steps = [
@@ -727,7 +727,7 @@ const handleSubmit = async () => {
           owner_id_file: null,
           applicant_signature: '',
           date_submitted: getCurrentDate(),
-          date_submitted_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          date_submitted_time: new Date().toTimeString().split(' ')[0]
         });
         setSelectedType('');
         setShowForm(false);

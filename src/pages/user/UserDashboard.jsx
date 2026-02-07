@@ -621,27 +621,6 @@ export default function UserDashboard() {
               )}
             </div>
           </div>
-          {/* Stats - Made more compact */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
-              <div className="text-xl font-bold" style={{ color: COLORS.primary }}>5K+</div>
-              <div className="text-xs text-gray-600">Monthly Applications</div>
-            </div>
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
-              <div className="text-xl font-bold" style={{ color: COLORS.secondary }}>98%</div>
-              <div className="text-xs text-gray-600">Approval Rate</div>
-            </div>
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
-              <div className="text-xl font-bold" style={{ color: COLORS.accent }}>70%</div>
-              <div className="text-xs text-gray-600">Faster Processing</div>
-            </div>
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
-              <div className="text-xl font-bold" style={{ color: COLORS.gray[700] }}>24/7</div>
-              <div className="text-xs text-gray-600">Online Access</div>
-            </div>
-          </div>
-
-
         </div>
 
         {/* 🧩 Horizontal Rectangle Cards Section */}

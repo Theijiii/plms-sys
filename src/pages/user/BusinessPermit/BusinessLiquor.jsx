@@ -973,16 +973,25 @@ export default function LiquorPermitApplication() {
     }
     
     if (step === 4) {
-      // Barangay clearance validation - ONLY ONE IS REQUIRED (ID OR FILE)
-      if (!formData.barangay_clearance_id.trim() && !formData.barangay_clearance_id_copy) {
+      // Barangay clearance validation - EITHER ID OR FILE (not both required)
+      const hasBarangayId = formData.barangay_clearance_id && formData.barangay_clearance_id.trim() !== '';
+      const hasBarangayFile = formData.barangay_clearance_id_copy;
+      
+      // Require at least one
+      if (!hasBarangayId && !hasBarangayFile) {
         newErrors.barangay_clearance = 'Barangay clearance ID or document is required (provide at least one)';
-      } else if (formData.barangay_clearance_id.trim() && !validatedBarangayIds[formData.barangay_clearance_id]) {
-        newErrors.barangay_clearance = 'Barangay clearance ID must be verified (click Verify button)';
-      } else if (formData.barangay_clearance_id_copy && !documentVerification.barangay_clearance_id_copy?.isVerified) {
-        if (documentVerification.barangay_clearance_id_copy?.isVerified === false) {
-          newErrors.barangay_clearance = 'Barangay clearance document is INVALID - Please upload a valid document';
-        } else {
-          newErrors.barangay_clearance = 'Barangay clearance document must be verified (click Verify button)';
+      } else {
+        // If ID is provided, it must be validated
+        if (hasBarangayId && !validatedBarangayIds[formData.barangay_clearance_id]) {
+          newErrors.barangay_clearance = 'Barangay clearance ID must be verified (click Verify button)';
+        }
+        // If file is provided, it must be verified (only check if ID is not provided or not valid)
+        if (!hasBarangayId && hasBarangayFile && !documentVerification.barangay_clearance_id_copy?.isVerified) {
+          if (documentVerification.barangay_clearance_id_copy?.isVerified === false) {
+            newErrors.barangay_clearance = 'Barangay clearance document is INVALID - Please upload a valid document';
+          } else {
+            newErrors.barangay_clearance = 'Barangay clearance document must be verified (click Verify button)';
+          }
         }
       }
       

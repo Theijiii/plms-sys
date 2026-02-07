@@ -1534,17 +1534,27 @@ export default function BusinessNew() {
       const currentDateTime = now.toISOString().split('T')[0] + ' ' + now.toTimeString().split(' ')[0];
       
       // CRITICAL FIELDS that must always be sent (with defaults if empty)
+      // owner_type MUST have a value - database requires it
+      const ownerTypeValue = (formData.owner_type && formData.owner_type.trim() !== '') 
+        ? formData.owner_type.trim() 
+        : 'Individual';
+      
       const criticalFields = {
-        'owner_type': (formData.owner_type && formData.owner_type.trim() !== '') ? formData.owner_type : 'Individual',
+        'owner_type': ownerTypeValue,
         'citizenship': formData.citizenship || '',
         'business_nature': formData.business_nature || '',
         'building_type': formData.building_type || '',
         'operation_type': formData.operation_type || ''
       };
       
-      // Add critical fields first to ensure they're never missing (always send, even if empty)
+      // Add critical fields first to ensure they're never missing
       Object.entries(criticalFields).forEach(([fieldName, value]) => {
-        formDataToSend.append(fieldName, String(value || ''));
+        // For owner_type, ensure it's never empty
+        if (fieldName === 'owner_type') {
+          formDataToSend.append(fieldName, value || 'Individual');
+        } else {
+          formDataToSend.append(fieldName, String(value || ''));
+        }
       });
       
       // Add all form data with conditional logic
