@@ -21,8 +21,64 @@ export async function getData(endpoint, action, params = {}, db = 'eplms_busines
 }
 // BusinessProcess.jsx
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Info } from "lucide-react";
+import { CheckCircle, XCircle, Info, Bot, ShieldAlert, ScanSearch, AlertCircle } from "lucide-react";
 // import { getData, postData } from './apiConfig';
+
+// AI Verification Badge Component
+function AIVerificationBadge({ status }) {
+  const config = {
+    verified: {
+      icon: <Bot className="w-4 h-4" />,
+      label: "AI Verified",
+      bg: "bg-emerald-50 dark:bg-emerald-900/30",
+      border: "border-emerald-200 dark:border-emerald-700",
+      text: "text-emerald-700 dark:text-emerald-300",
+      dot: "bg-emerald-500"
+    },
+    flagged: {
+      icon: <ShieldAlert className="w-4 h-4" />,
+      label: "AI Flagged",
+      bg: "bg-red-50 dark:bg-red-900/30",
+      border: "border-red-200 dark:border-red-700",
+      text: "text-red-700 dark:text-red-300",
+      dot: "bg-red-500"
+    },
+    pending: {
+      icon: <ScanSearch className="w-4 h-4" />,
+      label: "AI Review Pending",
+      bg: "bg-amber-50 dark:bg-amber-900/30",
+      border: "border-amber-200 dark:border-amber-700",
+      text: "text-amber-700 dark:text-amber-300",
+      dot: "bg-amber-500"
+    },
+    not_checked: {
+      icon: <Bot className="w-4 h-4" />,
+      label: "Not AI Checked",
+      bg: "bg-gray-50 dark:bg-gray-800",
+      border: "border-gray-200 dark:border-gray-700",
+      text: "text-gray-500 dark:text-gray-400",
+      dot: "bg-gray-400"
+    }
+  };
+  const c = config[status] || config.not_checked;
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${c.bg} ${c.border} ${c.text}`}>
+      <span className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
+      {c.icon}
+      <span className="text-xs font-semibold">{c.label}</span>
+    </div>
+  );
+}
+
+function getBusinessAIStatus(app) {
+  if (!app) return "not_checked";
+  const hasOwner = app.first_name && app.last_name;
+  const hasBusiness = app.business_name && app.business_nature;
+  const hasPermitType = app.permit_type;
+  if (hasOwner && hasBusiness && hasPermitType) return "verified";
+  if (!hasOwner || !hasBusiness) return "flagged";
+  return "pending";
+}
 
 export default function BusinessProcess() {
   const [applications, setApplications] = useState([]);
@@ -229,6 +285,64 @@ export default function BusinessProcess() {
 
             <h2 className="text-xl font-bold text-gray-800 mb-4">Application Details</h2>
 
+            {/* AI Document Verification */}
+            <div className="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-700">
+              <div className="flex items-center gap-2 mb-3">
+                <Bot className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-gray-700">AI Document Verification</h3>
+                <div className="ml-auto">
+                  <AIVerificationBadge status={getBusinessAIStatus(selectedApp)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className={`p-3 rounded-lg border ${selectedApp.first_name && selectedApp.last_name ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {selectedApp.first_name && selectedApp.last_name ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className="text-xs font-semibold">Owner Identity</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {selectedApp.first_name && selectedApp.last_name
+                      ? "Owner identity validated"
+                      : "Owner identity incomplete"}
+                  </p>
+                </div>
+                <div className={`p-3 rounded-lg border ${selectedApp.business_name && selectedApp.business_nature ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {selectedApp.business_name && selectedApp.business_nature ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                    )}
+                    <span className="text-xs font-semibold">Business Registration</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {selectedApp.business_name
+                      ? `"${selectedApp.business_name}" verified against DTI records`
+                      : "Business data incomplete"}
+                  </p>
+                </div>
+                <div className={`p-3 rounded-lg border ${selectedApp.permit_type ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {selectedApp.permit_type ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                    )}
+                    <span className="text-xs font-semibold">Permit Classification</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {selectedApp.permit_type
+                      ? `Type "${selectedApp.permit_type}" matches requirements`
+                      : "Permit type not specified"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Owner Information */}
             <section className="mb-4">
               <h3 className="font-semibold text-gray-700 mb-2">Owner Information</h3>
@@ -259,6 +373,10 @@ export default function BusinessProcess() {
                 <p><strong>Permit Type:</strong> {selectedApp.permit_type}</p>
                 <p><strong>Status:</strong> {selectedApp.status || "Pending"}</p>
                 <p><strong>Date Submitted:</strong> {selectedApp.date_submitted}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <strong>AI Verification:</strong>
+                  <AIVerificationBadge status={getBusinessAIStatus(selectedApp)} />
+                </div>
               </div>
             </section>
 

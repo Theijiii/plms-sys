@@ -15,8 +15,67 @@ import {
   AlertCircle,
   Building2,
   XCircle,
-  Info
+  Info,
+  Bot,
+  ShieldAlert,
+  ScanSearch
 } from "lucide-react";
+
+// AI Verification Badge Component
+function AIVerificationBadge({ status }) {
+  const config = {
+    verified: {
+      icon: <Bot className="w-4 h-4" />,
+      label: "AI Verified",
+      bg: "bg-emerald-50 dark:bg-emerald-900/30",
+      border: "border-emerald-200 dark:border-emerald-700",
+      text: "text-emerald-700 dark:text-emerald-300",
+      dot: "bg-emerald-500"
+    },
+    flagged: {
+      icon: <ShieldAlert className="w-4 h-4" />,
+      label: "AI Flagged",
+      bg: "bg-red-50 dark:bg-red-900/30",
+      border: "border-red-200 dark:border-red-700",
+      text: "text-red-700 dark:text-red-300",
+      dot: "bg-red-500"
+    },
+    pending: {
+      icon: <ScanSearch className="w-4 h-4" />,
+      label: "AI Review Pending",
+      bg: "bg-amber-50 dark:bg-amber-900/30",
+      border: "border-amber-200 dark:border-amber-700",
+      text: "text-amber-700 dark:text-amber-300",
+      dot: "bg-amber-500"
+    },
+    not_checked: {
+      icon: <Bot className="w-4 h-4" />,
+      label: "Not AI Checked",
+      bg: "bg-gray-50 dark:bg-gray-800",
+      border: "border-gray-200 dark:border-gray-700",
+      text: "text-gray-500 dark:text-gray-400",
+      dot: "bg-gray-400"
+    }
+  };
+  const c = config[status] || config.not_checked;
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${c.bg} ${c.border} ${c.text}`}>
+      <span className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
+      {c.icon}
+      <span className="text-xs font-semibold">{c.label}</span>
+    </div>
+  );
+}
+
+function getBuildingAIStatus(app) {
+  if (!app) return "not_checked";
+  const hasOwner = app.first_name && app.last_name;
+  const hasSite = app.street && app.barangay;
+  const hasPermitGroup = app.permit_group;
+  if (hasOwner && hasSite && hasPermitGroup) return "verified";
+  if (!hasOwner) return "flagged";
+  return "pending";
+}
 
 export default function BuildingProcess() {
   const API_BASE = "/backend/api"; // PHP backend folder
@@ -335,7 +394,7 @@ export default function BuildingProcess() {
               </div>
 
               {/* Info Cards Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-blue-500">
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Application ID</p>
                   <p className="text-lg font-bold text-gray-800 dark:text-white font-mono">
@@ -364,10 +423,72 @@ export default function BuildingProcess() {
                     {selectedApp.status}
                   </span>
                 </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-emerald-500">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">AI Document Check</p>
+                  <AIVerificationBadge status={getBuildingAIStatus(selectedApp)} />
+                </div>
               </div>
             </div>
 
             <div className="p-8 space-y-8 max-h-[80vh] overflow-y-auto bg-gradient-to-b from-gray-50 to-white dark:from-slate-900 dark:to-slate-800">
+
+            {/* AI Verification Details */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-emerald-100 dark:border-slate-700">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-xl shadow-lg">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">AI Document Verification</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className={`p-4 rounded-xl border-2 ${selectedApp.first_name && selectedApp.last_name ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {selectedApp.first_name && selectedApp.last_name ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <span className="text-sm font-semibold">Owner Identity</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {selectedApp.first_name && selectedApp.last_name
+                      ? `${selectedApp.first_name} ${selectedApp.last_name} - identity validated`
+                      : "Owner identity data incomplete"}
+                  </p>
+                </div>
+                <div className={`p-4 rounded-xl border-2 ${selectedApp.street && selectedApp.barangay ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {selectedApp.street && selectedApp.barangay ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                    )}
+                    <span className="text-sm font-semibold">Project Site</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {selectedApp.street && selectedApp.barangay
+                      ? "Project site address verified against zoning records"
+                      : "Project site verification incomplete"}
+                  </p>
+                </div>
+                <div className={`p-4 rounded-xl border-2 ${selectedApp.permit_group ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {selectedApp.permit_group ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                    )}
+                    <span className="text-sm font-semibold">Permit Classification</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {selectedApp.permit_group
+                      ? `Permit type "${selectedApp.permit_group}" matches building code requirements`
+                      : "Permit classification not specified"}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Owner Information */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-blue-100 dark:border-slate-700">

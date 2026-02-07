@@ -11,6 +11,9 @@ import {
   ShieldCheck,
   GraduationCap,
   Activity,
+  Settings,
+  Truck,
+  ClipboardCheck,
 } from "lucide-react";
 
 const AdminSidebarItems = [
@@ -63,6 +66,13 @@ const AdminSidebarItems = [
   },
 
   {
+    id: "buildingProcessing",
+    label: "Building Processing",
+    icon: Settings,
+    path: "/admin/buildingprocessing",
+    department: ["building", "super"],
+  },
+  {
     id: "professionalRegistration",
     label: "Registration Application",
     icon: GraduationCap,
@@ -84,6 +94,13 @@ const AdminSidebarItems = [
     path: "/admin/franchisepermit",
     department: ["transport", "super"],
   },
+  {
+    id: "franchiseProcessing",
+    label: "Franchise Processing",
+    icon: Truck,
+    path: "/admin/franchiseprocessing",
+    department: ["transport", "super"],
+  },
 
   {
     id: "brgydashboard",
@@ -97,6 +114,13 @@ const AdminSidebarItems = [
     label: "Clearance Requests",
     icon: ShieldCheck,
     path: "/admin/brgypermit",
+    department: ["barangay", "super"],
+  },
+  {
+    id: "brgyProcessing",
+    label: "Clearance Processing",
+    icon: ClipboardCheck,
+    path: "/admin/brgyprocessing",
     department: ["barangay", "super"],
   },
 
