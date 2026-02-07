@@ -61,7 +61,7 @@ export default function LandingPage() {
       id: 1,
       title: "Business Permit Application",
       description: "Apply, renew, and manage your business permits online with streamlined processing.",
-      icon: <FileText className="w-8 h-8" />,
+      icon: <FileText className="w-6 h-6" />,
       gradient: "from-blue-500 to-blue-600",
       bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
       borderColor: "border-blue-300",
@@ -75,7 +75,7 @@ export default function LandingPage() {
       id: 2,
       title: "Transport & Franchise Permit",
       description: "Secure transport permits, vehicle registration, and franchise applications digitally.",
-      icon: <Car className="w-8 h-8" />,
+      icon: <Car className="w-6 h-6" />,
       gradient: "from-green-500 to-green-600",
       bgColor: "bg-gradient-to-br from-green-50 to-green-100",
       borderColor: "border-green-300",
@@ -89,7 +89,7 @@ export default function LandingPage() {
       id: 3,
       title: "Building & Construction Permit",
       description: "Submit building plans, get construction permits, and schedule inspections online.",
-      icon: <Building className="w-8 h-8" />,
+      icon: <Building className="w-6 h-6" />,
       gradient: "from-orange-500 to-orange-600",
       bgColor: "bg-gradient-to-br from-orange-50 to-orange-100",
       borderColor: "border-orange-300",
@@ -103,7 +103,7 @@ export default function LandingPage() {
       id: 4,
       title: "Barangay Permit & Clearance",
       description: "Obtain barangay clearance, community permits, and local certifications quickly.",
-      icon: <Home className="w-8 h-8" />,
+      icon: <Home className="w-6 h-6" />,
       gradient: "from-red-500 to-red-600",
       bgColor: "bg-gradient-to-br from-red-50 to-red-100",
       borderColor: "border-red-300",
@@ -117,21 +117,21 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <Lock className="w-6 h-6" />,
+      icon: <Lock className="w-5 h-5" />,
       title: "Secure & Encrypted",
       description: "Bank-level security protection",
       gradient: "from-yellow-400 to-orange-500",
       iconBg: "bg-gradient-to-br from-yellow-400 to-orange-500"
     },
     {
-      icon: <Globe className="w-6 h-6" />,
+      icon: <Globe className="w-5 h-5" />,
       title: "24/7 Access",
       description: "Apply anytime, anywhere",
       gradient: "from-blue-400 to-blue-600",
       iconBg: "bg-gradient-to-br from-blue-400 to-blue-600"
     },
     {
-      icon: <Zap className="w-6 h-6" />,
+      icon: <Zap className="w-5 h-5" />,
       title: "Fast Processing",
       description: "Quick turnaround times",
       gradient: "from-green-400 to-green-600",
@@ -202,13 +202,13 @@ export default function LandingPage() {
       <main className="relative z-10 px-6 md:px-12 lg:px-[50px] py-8 md:py-10 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           {/* Left Section - Hero Content */}
-          <div className="text-center lg:text-left space-y-8 mt-8">
+          <div className="text-center lg:text-left space-y-6 mt-6">
             {/* Logo + Badge */}
-            <div className="flex flex-col items-center lg:items-start gap-6">
+            <div className="flex flex-col items-center lg:items-start gap-4">
               <img
                 src="/logoplms.png"
                 alt="PLMS Logo"
-                className="w-32 h-32 object-contain drop-shadow-lg"
+                className="w-24 h-24 object-contain drop-shadow-lg"
               />
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 backdrop-blur-sm rounded-full border border-blue-300">
                 <Award className="w-4 h-4 text-blue-600" />
@@ -216,14 +216,14 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-800 drop-shadow-sm">
+            <div className="space-y-4">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-gray-800 drop-shadow-sm">
                 Permit & Licensing Made
                 <span className="block mt-2 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
                   Simple & Fast
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-gray-700 leading-relaxed font-medium max-w-2xl">
+              <p className="text-base md:text-lg text-gray-700 leading-relaxed font-medium max-w-2xl">
                 Transform your permit applications with our secure digital platform. Government services are now faster, simpler, and accessible at your fingertips.
               </p>
             </div>
@@ -233,9 +233,9 @@ export default function LandingPage() {
               {features.map((feature, index) => (
                 <div 
                   key={index} 
-                  className="bg-white backdrop-blur-md border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                  className="bg-white backdrop-blur-md border border-gray-200 rounded-xl p-3 hover:bg-gray-50 transition-all duration-300 hover:scale-105 hover:shadow-xl group"
                 >
-                  <div className={`w-12 h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <div className={`w-10 h-10 ${feature.iconBg} rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
                     <div className="text-white">
                       {feature.icon}
                     </div>
@@ -254,7 +254,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button
                 onClick={handleLoginClick}
-                className="group px-8 py-4 bg-gradient-to-r from-[#FDA811] to-[#ff8c00] text-white rounded-2xl font-bold hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 relative overflow-hidden"
+                className="group px-6 py-3 bg-gradient-to-r from-[#FDA811] to-[#ff8c00] text-white rounded-xl font-bold text-sm hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <UserPlus className="w-5 h-5 relative z-10" />
@@ -264,13 +264,13 @@ export default function LandingPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center space-y-2">
                   <div className="flex items-center justify-center text-blue-600">
                     {stat.icon}
                   </div>
-                  <div className="text-2xl md:text-3xl font-bold text-gray-800 drop-shadow-sm">
+                  <div className="text-xl md:text-2xl font-bold text-gray-800 drop-shadow-sm">
                     {stat.value}
                   </div>
                   <div className="text-xs md:text-sm text-gray-600 font-medium">
@@ -282,11 +282,11 @@ export default function LandingPage() {
           </div>
 
           {/* Right Section - Service Cards */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="text-center lg:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3 flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600" />
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 Our Services
               </h2>
@@ -296,22 +296,22 @@ export default function LandingPage() {
             </div>
 
             {/* Service Cards Grid */}
-            <div className="grid grid-cols-1 gap-5">
+            <div className="grid grid-cols-1 gap-4">
               {services.map((service) => (
                 <div
                   key={service.id}
                   onMouseEnter={() => setActiveCard(service.id)}
                   onMouseLeave={() => setActiveCard(null)}
-                  className={`${service.bgColor} backdrop-blur-sm border-2 ${service.borderColor} rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 cursor-pointer group`}
+                  className={`${service.bgColor} backdrop-blur-sm border-2 ${service.borderColor} rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 cursor-pointer group`}
                 >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className={`w-16 h-16 ${service.iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`w-12 h-12 ${service.iconBg} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
                       <div className="text-white">
                         {service.icon}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className={`font-bold text-xl mb-2 ${service.textColor} group-hover:underline`}>
+                      <h3 className={`font-bold text-lg mb-1 ${service.textColor} group-hover:underline`}>
                         {service.title}
                       </h3>
                       <p className="text-sm text-gray-700 leading-relaxed">
@@ -320,7 +320,7 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <div className={`flex items-center gap-2 text-sm font-semibold ${service.textColor} mb-4 px-3 py-2 bg-white/50 rounded-lg border ${service.borderColor} w-fit`}>
+                  <div className={`flex items-center gap-2 text-xs font-semibold ${service.textColor} mb-3 px-2 py-1.5 bg-white/50 rounded-md border ${service.borderColor} w-fit`}>
                     {service.statsIcon}
                     <span>{service.stats}</span>
                   </div>
@@ -329,7 +329,7 @@ export default function LandingPage() {
                     {service.features.map((feature, index) => (
                       <span
                         key={index}
-                        className="px-3 py-2 bg-white/80 backdrop-blur-sm rounded-lg text-sm font-medium text-gray-800 border border-gray-200 hover:bg-white transition-colors shadow-sm"
+                        className="px-2 py-1.5 bg-white/80 backdrop-blur-sm rounded-md text-xs font-medium text-gray-800 border border-gray-200 hover:bg-white transition-colors shadow-sm"
                       >
                         {feature}
                       </span>

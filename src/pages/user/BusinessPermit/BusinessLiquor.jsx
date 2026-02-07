@@ -1226,6 +1226,10 @@ export default function LiquorPermitApplication() {
         permit_type: 'LIQUOR'
       };
 
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      formDataToSend.append('user_id', userId);
+
       // Append form fields
       Object.entries(formFields).forEach(([key, value]) => {
         formDataToSend.append(key, value);
@@ -2192,10 +2196,14 @@ export default function LiquorPermitApplication() {
                     name="business_phone" 
                     value={formData.business_phone} 
                     onChange={handleChange} 
-                    placeholder="Phone number" 
+                    placeholder="09XXXXXXXXX" 
+                    maxLength={11}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     className={`w-full p-3 border border-black rounded-lg ${errors.business_phone ? 'border-red-500' : ''}`} 
                     style={{ color: COLORS.secondary, fontFamily: COLORS.font }} 
                   />
+                  <p className="text-xs text-gray-500 mt-1">Must be 11 digits starting with 09</p>
                   {errors.business_phone && <p className="text-red-600 text-sm mt-1">{errors.business_phone}</p>}
                 </div>
               </div>

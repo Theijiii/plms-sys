@@ -149,14 +149,18 @@ try {
     $conn = new mysqli('localhost', 'eplms_ella', 'mypassword', 'eplms_building_permit_db');
     if (!$conn->connect_error) {
         $conn->set_charset("utf8mb4");
-        $query = "SELECT a.*, ap.first_name, ap.last_name, ap.middle_initial, ap.email, ap.contact_no, ap.home_address 
+        $query = "SELECT a.*, ap.first_name, ap.last_name, ap.middle_initial, ap.email, ap.contact_no, ap.home_address, ap.user_id 
                   FROM application a 
                   JOIN applicant ap ON a.applicant_id = ap.applicant_id 
-                  WHERE ap.email = ? 
+                  WHERE ap.email = ? " . ($userId > 0 ? "OR ap.user_id = ? " : "") . "
                   ORDER BY a.application_id DESC";
         $stmt = $conn->prepare($query);
         if ($stmt) {
-            $stmt->bind_param("s", $userEmail);
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result) {
@@ -176,7 +180,7 @@ try {
                         'expirationDate' => $row['expected_date_of_completion'] ?? null,
                         'fees' => $row['total_estimated_cost'] ?? '0.00',
                         'receiptNumber' => 'N/A',
-                        'user_id' => 0,
+                        'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['remarks'] ?? '',
                         'compliance_notes' => ''
                     ];

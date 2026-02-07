@@ -172,6 +172,9 @@ try {
     // Owner type declaration
     $owner_type_declaration = isset($_POST['owner_type_declaration']) ? $conn->real_escape_string(trim($_POST['owner_type_declaration'])) : 'Business Owner';
     
+    // Get user_id from POST data (sent by frontend from localStorage)
+    $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+    
     // Insert into business_permit_applications table
     // NOTE: permit_id is AUTO_INCREMENT and should NOT be included in INSERT
     $sql = "INSERT INTO business_permit_applications (
@@ -187,7 +190,8 @@ try {
         total_employees, male_employees, female_employees,
         barangay_clearance_id, official_receipt_no,
         date_submitted, has_barangay_clearance, has_owner_valid_id,
-        has_official_receipt, has_fsic, owner_type_declaration
+        has_official_receipt, has_fsic, owner_type_declaration,
+        user_id
     ) VALUES (
         ?, ?, ?, ?,
         NOW(), NOW(),
@@ -200,7 +204,8 @@ try {
         ?, ?,
         ?, ?, ?,
         ?, ?,
-        ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?,
+        ?
     )";
     
     error_log("SQL: " . $sql);
@@ -212,7 +217,7 @@ try {
     
     // Bind parameters - permit_id is AUTO_INCREMENT, so we start with applicant_id
     $stmt->bind_param(
-        'sssssssssssssssssssdsssssssddiiisssiiii',
+        'sssssssssssssssssssdsssssssddiiisssiiiii',
         $applicant_id,  // RBUS-YYYY-XXXXXX format
         $application_date,
         $permit_type,
@@ -251,7 +256,8 @@ try {
         $has_owner_valid_id,
         $has_official_receipt,
         $has_fsic,
-        $owner_type_declaration
+        $owner_type_declaration,
+        $user_id
     );
     
     if (!$stmt->execute()) {

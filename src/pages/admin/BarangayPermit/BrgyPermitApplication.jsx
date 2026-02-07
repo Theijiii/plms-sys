@@ -1251,35 +1251,66 @@ const viewFile = (file) => {
         </div>
       </div>
 
-      {/* Modal with White Background and Blur */}
+      {/* Modal */}
       {showModal && selectedPermit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/30 backdrop-blur-sm p-4 overflow-auto">
-          <div className="w-full max-w-6xl bg-white dark:bg-slate-800 rounded-xl shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 overflow-auto animate-fadeIn">
+          <div className="w-full max-w-7xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl transform transition-all">
             {/* Modal Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-[#4CAF50]/5 to-[#4A90E2]/5 rounded-t-xl">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Barangay Permit Details</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Permit ID: BP-{String(selectedPermit.permit_id).padStart(4, '0')}
-                  </p>
-                  <span className={`mt-2 px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(selectedPermit.status)}`}>
-                    {selectedPermit.uiStatus || getUIStatus(selectedPermit.status)}
-                  </span>
+            <div className="relative p-6 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 border-b-4 border-[#4CAF50]">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gradient-to-br from-[#4CAF50] to-[#45a049] p-3 rounded-2xl shadow-xl">
+                    <FileText className="w-10 h-10 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Barangay Permit</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Barangay Permit Application Details</p>
+                  </div>
                 </div>
                 <button 
                   onClick={closeModal}
-                  className="p-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#FDA811] transition-colors"
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-all"
                 >
-                  <span className="text-xl">×</span>
+                  <X className="w-6 h-6" />
                 </button>
+              </div>
+
+              {/* Info Cards Row */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-blue-500">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Permit ID</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white font-mono">
+                    BP-{String(selectedPermit.permit_id).padStart(4, '0')}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-purple-500">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Applicant ID</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">
+                    {selectedPermit.applicant_id || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-green-500">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Status</p>
+                  <span className={`inline-block px-3 py-1 text-sm font-bold rounded-full ${getStatusColor(selectedPermit.status)}`}>
+                    {selectedPermit.uiStatus || getUIStatus(selectedPermit.status)}
+                  </span>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-orange-500">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">Application Date</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">
+                    {selectedPermit.application_date ? new Date(selectedPermit.application_date).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+            <div className="p-8 space-y-8 max-h-[80vh] overflow-y-auto bg-gradient-to-b from-gray-50 to-white dark:from-slate-900 dark:to-slate-800">
               {/* Personal Information Section */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personal Information</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-blue-100 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg"><User className="w-6 h-6 text-white" /></div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Personal Information</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Applicant ID</label>
@@ -1333,8 +1364,13 @@ const viewFile = (file) => {
               </div>
 
               {/* Address Information */}
-              <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Address Information</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-green-100 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Address Information</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">House No.</label>
@@ -1376,8 +1412,11 @@ const viewFile = (file) => {
               </div>
 
               {/* Permit Details */}
-              <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Permit Details</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-orange-100 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-xl shadow-lg"><FileText className="w-6 h-6 text-white" /></div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Permit Details</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Purpose</label>
@@ -1413,8 +1452,11 @@ const viewFile = (file) => {
               </div>
 
               {/* Payment Information */}
-              <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Information</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-purple-100 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg"><Receipt className="w-6 h-6 text-white" /></div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Payment Information</h3>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Clearance Fee</label>
@@ -1433,8 +1475,13 @@ const viewFile = (file) => {
 
               {/* Submitted Attachments */}
               {parseAttachments(selectedPermit.attachments).length > 0 && (
-                <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Submitted Files</h4>
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-cyan-100 dark:border-slate-700">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 p-3 rounded-xl shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-900 dark:text-white">Submitted Files</h4>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {parseAttachments(selectedPermit.attachments).map((file) => (
                       <div key={file.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
@@ -1467,15 +1514,20 @@ const viewFile = (file) => {
               )}
 
               {/* Review Comments Section */}
-              <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Review Comments
-                  {selectedPermit.comments && (
-                    <span className="text-sm font-normal text-gray-500 ml-2">
-                      ({formatComments(selectedPermit.comments).length} comment{formatComments(selectedPermit.comments).length !== 1 ? 's' : ''})
-                    </span>
-                  )}
-                </h3>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-yellow-100 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-3 rounded-xl shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review Comments</h3>
+                    {selectedPermit.comments && (
+                      <span className="text-sm font-normal text-gray-500">
+                        ({formatComments(selectedPermit.comments).length} comment{formatComments(selectedPermit.comments).length !== 1 ? 's' : ''})
+                      </span>
+                    )}
+                  </div>
+                </div>
                 
                 {/* Display all comments in one box */}
                 <div className="space-y-4 mb-6">
@@ -1558,13 +1610,13 @@ const viewFile = (file) => {
               {(() => {
                 const history = actionHistory[selectedPermit.permit_id] || [];
                 return history.length > 0 ? (
-                  <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-blue-100 dark:border-slate-700">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                        <Clock className="w-6 h-6 text-white" />
+                      </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Action History</h3>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Action History</h3>
                         <p className="text-sm text-gray-500">{history.length} action{history.length !== 1 ? 's' : ''} taken this session</p>
                       </div>
                     </div>

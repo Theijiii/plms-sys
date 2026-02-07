@@ -112,6 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     error_log("Generated Applicant ID: " . $applicantId);
 
     // ====== 4. PREPARE AMENDMENT DATA ======
+    // Get user_id from POST data (sent by frontend from localStorage)
+    $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+    
     $amendmentData = [
         'business_permit_id' => $_POST['business_permit_id'] ?? '',
         'applicant_id' => $applicantId, // Use generated ID
@@ -132,7 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'declaration_agreed' => isset($_POST['declaration_agreed']) ? 1 : 0,
         'date_submitted' => $_POST['date_submitted'] ?? date('Y-m-d'),
         'date_submitted_time' => $_POST['date_submitted_time'] ?? date('H:i:s'),
-        'status' => 'pending'
+        'status' => 'pending',
+        'user_id' => $user_id
     ];
 
     // ====== 5. SAVE TO DATABASE ======

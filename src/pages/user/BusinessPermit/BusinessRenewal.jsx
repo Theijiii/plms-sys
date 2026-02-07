@@ -881,6 +881,10 @@ export default function BusinessRenewal() {
         formDataToSend.append('applicant_signature', signatureFile);
       }
       
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      formDataToSend.append('user_id', userId);
+
       // Add action for renewal
       formDataToSend.append('action', 'submit_business_renewal');
 

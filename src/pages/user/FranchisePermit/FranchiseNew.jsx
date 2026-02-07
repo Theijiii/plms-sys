@@ -2090,6 +2090,10 @@ export default function FranchiseNew() {
       formDataToSend.append('sticker_id_fee_checked', formData.sticker_id_fee_checked ? '1' : '0');
       formDataToSend.append('inspection_fee_checked', formData.inspection_fee_checked ? '1' : '0');
       
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      formDataToSend.append('user_id', userId);
+      
       if (formData.permit_subtype === 'FRANCHISE' && formData.mtop_application_id) {
         formDataToSend.append('mtop_reference_id', formData.mtop_application_id);
       }

@@ -305,11 +305,14 @@ try {
         throw new Exception("Missing required fields: " . implode(', ', $missingFields));
     }
     
+    // Get user_id from POST data (sent by frontend from localStorage)
+    $user_id = isset($postData['user_id']) ? intval($postData['user_id']) : 0;
+    
     // Build the SQL dynamically
-    $columns = ['applicant_id', 'application_date', 'permit_type', 'status'];
-    $placeholders = ['?', '?', '?', '?'];
-    $values = [$applicant_id, $application_date, ($postData['permit_type'] ?? 'NEW'), $status];
-    $types = 'ssss';
+    $columns = ['applicant_id', 'application_date', 'permit_type', 'status', 'user_id'];
+    $placeholders = ['?', '?', '?', '?', '?'];
+    $values = [$applicant_id, $application_date, ($postData['permit_type'] ?? 'NEW'), $status, $user_id];
+    $types = 'ssssi';
     
     // Add fields that exist in POST data
     foreach ($fieldMap as $formField => $config) {

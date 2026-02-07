@@ -126,6 +126,10 @@ export default function BuildingNew() {
         submitData.append(key, value);
       });
 
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      submitData.append('user_id', userId);
+
       if (formData.signature) submitData.append("signature", formData.signature);
       if (formData.attachments && formData.attachments.length > 0) {
         for (let i = 0; i < formData.attachments.length; i++) {

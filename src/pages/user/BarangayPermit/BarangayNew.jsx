@@ -793,7 +793,7 @@ export default function BarangayNew() {
 
       // Append all text fields
       Object.entries({
-        user_id: formData.user_id || "",
+        user_id: localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || "0",
         application_date: formData.application_date,
         first_name: formData.first_name,
         middle_name: formData.middle_name || "",
@@ -882,8 +882,8 @@ export default function BarangayNew() {
           house_no: '',
           street: '',
           barangay: '',
-          city_municipality: '',
-          province: '',
+          city_municipality: 'Caloocan City',
+          province: 'Metro Manila',
           zip_code: '',
           purpose: '',
           duration: '',
@@ -1023,12 +1023,12 @@ export default function BarangayNew() {
               </div>
               <div>
                 <label className="block mb-2 font-medium" style={{ color: COLORS.secondary }}>City/Municipality *</label>
-                <input type="text" name="city_municipality" value={formData.city_municipality} onChange={handleChange} placeholder="City/Municipality" className={`w-full p-3 border border-black rounded-lg ${errors.city_municipality ? 'border-red-500' : ''}`} style={{ color: COLORS.secondary, fontFamily: COLORS.font }} />
+                <input type="text" name="city_municipality" value={formData.city_municipality} readOnly placeholder="City/Municipality" className={`w-full p-3 border border-black rounded-lg bg-gray-100 cursor-not-allowed ${errors.city_municipality ? 'border-red-500' : ''}`} style={{ color: COLORS.secondary, fontFamily: COLORS.font }} />
                 {errors.city_municipality && <p className="text-red-600 text-sm mt-1" style={{ fontFamily: COLORS.font }}>{errors.city_municipality}</p>}
               </div>
               <div>
                 <label className="block mb-2 font-medium" style={{ color: COLORS.secondary }}>Province *</label>
-                <input type="text" name="province" value={formData.province} onChange={handleChange} placeholder="Province" className={`w-full p-3 border border-black rounded-lg ${errors.province ? 'border-red-500' : ''}`} style={{ color: COLORS.secondary, fontFamily: COLORS.font }} />
+                <input type="text" name="province" value={formData.province} readOnly placeholder="Province" className={`w-full p-3 border border-black rounded-lg bg-gray-100 cursor-not-allowed ${errors.province ? 'border-red-500' : ''}`} style={{ color: COLORS.secondary, fontFamily: COLORS.font }} />
                 {errors.province && <p className="text-red-600 text-sm mt-1" style={{ fontFamily: COLORS.font }}>{errors.province}</p>}
               </div>
               <div>

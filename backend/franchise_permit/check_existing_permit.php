@@ -69,31 +69,51 @@ try {
     }
     
     $permit_id = trim($data['permit_id']);
-    $plate_number = trim($data['plate_number']);
+    $plate_number = strtoupper(trim($data['plate_number']));
     $renewal_type = isset($data['renewal_type']) ? trim($data['renewal_type']) : 'MTOP';
     
-    // For testing - simulate a response
-    $response['success'] = true;
-    $response['hasExistingPermit'] = true;
-    $response['application_id'] = $permit_id;
-    $response['permitStatus'] = 'APPROVED';
-    $response['isEligibleForRenewal'] = true;
-    $response['message'] = 'Test permit found. This is a simulated response.';
+    // Query the database for the existing permit by application_id and plate_number
+    $stmt = $conn->prepare(
+        "SELECT application_id, permit_type, permit_subtype, status,
+                first_name, last_name, middle_initial,
+                home_address, contact_number, email,
+                citizenship, birth_date, id_type, id_number,
+                make_brand, model, engine_number, chassis_number,
+                plate_number, year_acquired, color, vehicle_type,
+                lto_or_number, lto_cr_number, lto_expiration_date,
+                mv_file_number, district, route_zone,
+                barangay_of_operation, toda_name, operator_type, company_name,
+                date_approved, expiry_date, user_id
+         FROM franchise_permit_applications
+         WHERE application_id = ? AND UPPER(plate_number) = ?
+         LIMIT 1"
+    );
     
-    // Simulate permit data
-    $response['existingPermit'] = [
-        'application_id' => $permit_id,
-        'permit_subtype' => $renewal_type === 'MTOP' ? 'MTOP' : 'FRANCHISE',
-        'first_name' => 'John',
-        'last_name' => 'Doe',
-        'plate_number' => $plate_number,
-        'status' => 'APPROVED',
-        'date_approved' => '2024-01-15',
-        'expiry_date' => date('Y-m-d', strtotime('+30 days')),
-        'make_brand' => 'Honda',
-        'model' => 'Wave 125',
-        'color' => 'Red'
-    ];
+    if (!$stmt) {
+        throw new Exception('Database query preparation failed: ' . $conn->error);
+    }
+    
+    $stmt->bind_param("ss", $permit_id, $plate_number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $permit = $result->fetch_assoc();
+        
+        $response['success'] = true;
+        $response['hasExistingPermit'] = true;
+        $response['application_id'] = $permit['application_id'];
+        $response['permitStatus'] = $permit['status'];
+        $response['isEligibleForRenewal'] = in_array(strtoupper($permit['status']), ['APPROVED', 'EXPIRED']);
+        $response['message'] = 'Existing permit found.';
+        
+        $response['existingPermit'] = $permit;
+    } else {
+        $response['success'] = false;
+        $response['message'] = 'No existing permit found with the provided Permit ID and Plate Number.';
+    }
+    
+    $stmt->close();
     
 } catch (Exception $e) {
     $response['success'] = false;

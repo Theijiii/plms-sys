@@ -1917,6 +1917,10 @@ const checkExistingPermit = async () => {
       formDataToSend.append('renewal_type', renewalType);
       formDataToSend.append('original_permit_id', formData.original_permit_id);
       
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      formDataToSend.append('user_id', userId);
+      
       // Add checkbox values
       formDataToSend.append('renewal_fee_checked', formData.renewal_fee_checked ? '1' : '0');
       formDataToSend.append('sticker_fee_checked', formData.sticker_fee_checked ? '1' : '0');

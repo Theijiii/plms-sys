@@ -9,13 +9,15 @@ function getUserData() {
   };
 }
 
-export async function logActivity({ action, action_category = "system", description, module = "", reference_id = "", metadata = null }) {
+export async function logActivity({ action, action_category = "system", description, module = "", reference_id = "", metadata = null, user_email = "", user_name = "", user_role = "" }) {
   try {
     const userData = getUserData();
-    if (!userData.user_email) return;
-
+    // Allow explicit overrides for cases where localStorage isn't populated yet (e.g. login)
     const payload = {
       ...userData,
+      user_email: user_email || userData.user_email,
+      user_name: user_name || userData.user_name,
+      user_role: user_role || userData.user_role,
       action,
       action_category,
       description,
@@ -23,6 +25,7 @@ export async function logActivity({ action, action_category = "system", descript
       reference_id,
       metadata,
     };
+    if (!payload.user_email) return;
 
     fetch(LOG_API, {
       method: "POST",
@@ -42,15 +45,21 @@ export function logLogin(email, role = "user") {
     description: `User logged in`,
     module: "Authentication",
     metadata: { role },
+    user_email: email,
+    user_role: role,
   });
 }
 
 export function logLogout() {
+  const email = localStorage.getItem("email") || localStorage.getItem("goserveph_email") || "";
+  const role = localStorage.getItem("goserveph_role") || localStorage.getItem("user_role") || "user";
   logActivity({
     action: "Logout",
     action_category: "account",
     description: `User logged out`,
     module: "Authentication",
+    user_email: email,
+    user_role: role,
   });
 }
 
@@ -60,6 +69,8 @@ export function logRegistration(email, name = "") {
     action_category: "account",
     description: `${name || email} registered a new account`,
     module: "Authentication",
+    user_email: email,
+    user_name: name,
   });
 }
 

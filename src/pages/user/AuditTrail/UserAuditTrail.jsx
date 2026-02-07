@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import {
   Calendar, RefreshCw, ChevronLeft, ChevronRight,
   FileText, Shield, Clock, CheckCircle, XCircle,
   AlertTriangle, User, Activity, Eye, X, Loader2, Filter, ChevronDown,
-  LogIn, LogOut, UserPlus, ClipboardList
+  LogIn, LogOut, UserPlus, ClipboardList, ArrowLeft
 } from "lucide-react";
 
 const ACTION_ICONS = {
@@ -24,6 +25,7 @@ const CATEGORY_STYLES = {
 
 export default function UserAuditTrail() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activities, setActivities] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +133,13 @@ export default function UserAuditTrail() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+          <button
+            onClick={() => navigate("/user/dashboard")}
+            className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-[#4CAF50] dark:hover:text-[#4CAF50] transition-colors mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
             <Activity className="w-7 h-7 text-[#4CAF50]" />
             My Activity Trail

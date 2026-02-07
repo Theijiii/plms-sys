@@ -602,6 +602,10 @@ const handleSubmit = async () => {
       declaration_agreed: agreeDeclaration ? "1" : "0"
     };
 
+    // Add user_id for tracking applications by user
+    const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+    formDataToSend.append('user_id', userId);
+
     // DEBUG: Log each field before appending
     Object.entries(formFields).forEach(([key, value]) => {
       console.log(`Appending ${key}:`, value);

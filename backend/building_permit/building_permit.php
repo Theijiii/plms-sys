@@ -75,8 +75,8 @@ function handleBuildingPermitSubmission() {
 
         // ===== 1. Insert into applicant table =====
         $stmt = $conn->prepare("INSERT INTO applicant 
-            (last_name, first_name, middle_initial, suffix, tin, contact_no, email, citizenship, home_address, form_of_ownership) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            (last_name, first_name, middle_initial, suffix, tin, contact_no, email, citizenship, home_address, form_of_ownership, user_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         if (!$stmt) throw new Exception("Prepare applicant failed: " . $conn->error);
 
@@ -90,15 +90,16 @@ function handleBuildingPermitSubmission() {
         $citizenship = trim($_POST['citizenship'] ?? '');
         $home_address = trim($_POST['home_address'] ?? '');
         $form_of_ownership = trim($_POST['form_of_ownership'] ?? '');
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
 
         // Validate required
         if (empty($last_name) || empty($first_name) || empty($email)) {
             throw new Exception("Last name, first name, and email are required.");
         }
 
-        $stmt->bind_param('ssssisssss',
+        $stmt->bind_param('ssssisssssi',
             $last_name, $first_name, $middle_initial, $suffix,
-            $tin, $contact_no, $email, $citizenship, $home_address, $form_of_ownership
+            $tin, $contact_no, $email, $citizenship, $home_address, $form_of_ownership, $user_id
         );
 
         if (!$stmt->execute()) throw new Exception("Insert applicant failed: " . $stmt->error);

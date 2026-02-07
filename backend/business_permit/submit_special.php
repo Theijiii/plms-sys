@@ -76,6 +76,9 @@ try {
     $event_location = $conn->real_escape_string(trim($_POST['event_location']));
     $estimated_attendees = isset($_POST['estimated_attendees']) ? intval($_POST['estimated_attendees']) : 0;
     
+    // Get user_id from POST data (sent by frontend from localStorage)
+    $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+    
     // Insert into special_permit_applications table
     $sql = "INSERT INTO special_permit_applications (
         applicant_id, application_date, status,
@@ -83,6 +86,7 @@ try {
         contact_number, email_address,
         special_permit_type, event_description, 
         event_date_start, event_date_end, event_location, estimated_attendees,
+        user_id,
         submission_date, last_updated
     ) VALUES (
         ?, ?, ?,
@@ -90,8 +94,9 @@ try {
         ?, ?,
         ?, ?,
         ?, ?, ?, ?,
+        ?,
         NOW(), NOW()
-    )";
+    );";
     
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -99,7 +104,7 @@ try {
     }
     
     $stmt->bind_param(
-        'ssssssssssssssi',
+        'ssssssssssssssii',
         $applicant_id,
         $application_date,
         $status,
@@ -114,7 +119,8 @@ try {
         $event_date_start,
         $event_date_end,
         $event_location,
-        $estimated_attendees
+        $estimated_attendees,
+        $user_id
     );
     
     if (!$stmt->execute()) {

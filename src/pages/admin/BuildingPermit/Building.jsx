@@ -59,6 +59,7 @@ export default function BuildingPermitApplication() {
   const [exporting, setExporting] = useState(false);
   const [exportType, setExportType] = useState("");
   const [showActionsDropdown, setShowActionsDropdown] = useState(false);
+  const [actionHistory, setActionHistory] = useState({});
   const actionsRef = useRef(null);
 
   const ITEMS_PER_PAGE = 10;
@@ -299,8 +300,12 @@ export default function BuildingPermitApplication() {
 
     if (result.isConfirmed) {
       const notes = result.value || actionComment;
-      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Approved', remarks: notes || p.remarks } : p));
-      setSelectedPermit(prev => ({ ...prev, status: 'Approved', remarks: notes || prev.remarks }));
+      const timestamp = new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+      const newComment = notes ? `--- ${timestamp} ---\n${notes}\n` : '';
+      const updatedRemarks = newComment ? newComment + (selectedPermit.remarks || '') : selectedPermit.remarks;
+      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Approved', remarks: updatedRemarks } : p));
+      setSelectedPermit(prev => ({ ...prev, status: 'Approved', remarks: updatedRemarks }));
+      setActionHistory(prev => ({ ...prev, [selectedPermit.id]: [...(prev[selectedPermit.id] || []), { action: 'Approved', timestamp, notes: notes || '', by: 'Admin' }] }));
       setActionComment('');
       Swal.fire({
         icon: 'success',
@@ -351,8 +356,12 @@ export default function BuildingPermitApplication() {
     });
 
     if (result.isConfirmed) {
-      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Rejected', remarks: result.value || p.remarks } : p));
-      setSelectedPermit(prev => ({ ...prev, status: 'Rejected', remarks: result.value || prev.remarks }));
+      const timestamp = new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+      const newComment = result.value ? `--- ${timestamp} ---\n${result.value}\n` : '';
+      const updatedRemarks = newComment ? newComment + (selectedPermit.remarks || '') : selectedPermit.remarks;
+      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: 'Rejected', remarks: updatedRemarks } : p));
+      setSelectedPermit(prev => ({ ...prev, status: 'Rejected', remarks: updatedRemarks }));
+      setActionHistory(prev => ({ ...prev, [selectedPermit.id]: [...(prev[selectedPermit.id] || []), { action: 'Rejected', timestamp, notes: result.value || '', by: 'Admin' }] }));
       setActionComment('');
       Swal.fire({
         icon: 'success',
@@ -398,8 +407,12 @@ export default function BuildingPermitApplication() {
 
     if (result.isConfirmed) {
       const notes = result.value || '';
-      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: status, remarks: notes || p.remarks } : p));
-      setSelectedPermit(prev => ({ ...prev, status: status, remarks: notes || prev.remarks }));
+      const timestamp = new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+      const newComment = notes ? `--- ${timestamp} ---\n${notes}\n` : '';
+      const updatedRemarks = newComment ? newComment + (selectedPermit.remarks || '') : selectedPermit.remarks;
+      setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, status: status, remarks: updatedRemarks } : p));
+      setSelectedPermit(prev => ({ ...prev, status: status, remarks: updatedRemarks }));
+      setActionHistory(prev => ({ ...prev, [selectedPermit.id]: [...(prev[selectedPermit.id] || []), { action: status, timestamp, notes, by: 'Admin' }] }));
       setActionComment('');
       Swal.fire({
         icon: 'success',
@@ -419,6 +432,55 @@ export default function BuildingPermitApplication() {
   const handleMouseDown = (e) => { if (zoomLevel > 100) { setIsDragging(true); setDragStart({ x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y }); } };
   const handleMouseMove = (e) => { if (isDragging) setDragOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }); };
   const handleMouseUp = () => setIsDragging(false);
+
+  // Format comments with timestamps
+  const formatComments = (commentsText) => {
+    if (!commentsText || typeof commentsText !== 'string') return [];
+    try {
+      const commentBlocks = commentsText.split(/(?=---\s+.+?\s+---)/g);
+      const formattedComments = [];
+      for (let block of commentBlocks) {
+        block = block.trim();
+        if (!block) continue;
+        const match = block.match(/^---\s+(.+?)\s+---\n([\s\S]*)$/);
+        if (match) {
+          const timestamp = match[1].trim();
+          const comment = match[2].trim();
+          if (comment) formattedComments.push({ timestamp, comment });
+        } else {
+          formattedComments.push({ timestamp: 'Just now', comment: block });
+        }
+      }
+      return formattedComments;
+    } catch (e) {
+      console.error('Error formatting comments:', e);
+      return [{ timestamp: 'Recent', comment: commentsText }];
+    }
+  };
+
+  // Save comment only (without status change)
+  const saveCommentOnly = async () => {
+    if (!selectedPermit || !actionComment.trim()) return;
+    // For building permits (local-only), append comment to remarks
+    const timestamp = new Date().toLocaleString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true
+    });
+    const newComment = `--- ${timestamp} ---\n${actionComment}\n`;
+    const updatedRemarks = newComment + (selectedPermit.remarks || '');
+    
+    setPermits(prev => prev.map(p => p.id === selectedPermit.id ? { ...p, remarks: updatedRemarks } : p));
+    setSelectedPermit(prev => ({ ...prev, remarks: updatedRemarks }));
+    setActionComment('');
+    Swal.fire({
+      icon: 'success',
+      title: 'Comment Saved!',
+      text: 'Your comment has been added.',
+      confirmButtonColor: '#4CAF50',
+      timer: 2000,
+      showConfirmButton: true
+    });
+  };
 
   const viewFile = (file) => {
     setSelectedFile(file);
@@ -783,19 +845,127 @@ export default function BuildingPermitApplication() {
 
               {/* Review Comments */}
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-yellow-100 dark:border-slate-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Review Comments</h3>
-                {selectedPermit.remarks ? (
-                  <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600 mb-4">
-                    <p className="text-gray-900 dark:text-white">{selectedPermit.remarks}</p>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-3 rounded-xl shadow-lg">
+                    <MessageSquare className="w-6 h-6 text-white" />
                   </div>
-                ) : (
-                  <div className="text-center py-6 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600 mb-4">
-                    <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">No comments yet.</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review Comments</h3>
+                    {selectedPermit.remarks && (
+                      <span className="text-sm font-normal text-gray-500">
+                        ({formatComments(selectedPermit.remarks).length} comment{formatComments(selectedPermit.remarks).length !== 1 ? 's' : ''})
+                      </span>
+                    )}
                   </div>
-                )}
-                <textarea value={actionComment} onChange={(e) => setActionComment(e.target.value)} placeholder="Add a comment..." className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent resize-none" rows="3" />
+                </div>
+                
+                <div className="space-y-4 mb-6">
+                  {selectedPermit.remarks && selectedPermit.remarks.trim() ? (
+                    <div className="bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600 overflow-hidden">
+                      <div className="max-h-64 overflow-y-auto p-4">
+                        {formatComments(selectedPermit.remarks).map((comment, index) => (
+                          <div key={index} className={`mb-4 ${index !== 0 ? 'pt-4 border-t border-gray-200 dark:border-slate-600' : ''}`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Admin Comment
+                              </div>
+                              <div className="flex items-center text-xs text-gray-400">
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {comment.timestamp}
+                              </div>
+                            </div>
+                            <div className="pl-6">
+                              <p className="text-gray-900 dark:text-white bg-white dark:bg-slate-800 p-3 rounded border border-gray-100 dark:border-slate-500">
+                                {comment.comment}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-4 py-3 bg-gray-100 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-600">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Total: {formatComments(selectedPermit.remarks).length} comment{formatComments(selectedPermit.remarks).length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600">
+                      <svg className="w-12 h-12 text-gray-300 dark:text-gray-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                      <p className="text-gray-500 dark:text-gray-400">No comments yet. Add your first comment below.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add New Comment</label>
+                  <textarea value={actionComment} onChange={(e) => setActionComment(e.target.value)} placeholder="Enter your review notes here..." className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-3 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent" rows={3} />
+                  {actionComment.trim() && (
+                    <div className="mt-4 flex justify-end">
+                      <button onClick={saveCommentOnly} className="px-6 py-2 bg-[#4A90E2] text-white rounded-lg hover:bg-[#4A90E2]/80 transition-colors font-medium flex items-center shadow-sm hover:shadow">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Save Comment
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Action History Section */}
+              {(() => {
+                const history = actionHistory[selectedPermit.id] || [];
+                return history.length > 0 ? (
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-blue-100 dark:border-slate-700">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                        <Clock className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Action History</h3>
+                        <p className="text-sm text-gray-500">{history.length} action{history.length !== 1 ? 's' : ''} taken this session</p>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute left-[17px] top-0 bottom-0 w-0.5 bg-blue-200 dark:bg-slate-600"></div>
+                      <div className="space-y-4 max-h-64 overflow-y-auto">
+                        {[...history].reverse().map((entry, idx) => (
+                          <div key={idx} className="relative pl-10">
+                            <div className={`absolute left-[10px] top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 shadow ${
+                              entry.action === 'Approved' ? 'bg-green-500' :
+                              entry.action === 'Rejected' ? 'bg-red-500' :
+                              entry.action === 'Pending' ? 'bg-yellow-500' :
+                              'bg-blue-500'
+                            }`}></div>
+                            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 border border-gray-200 dark:border-slate-600">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                                  entry.action === 'Approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                  entry.action === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                  entry.action === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                }`}>{entry.action}</span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">{entry.timestamp}</span>
+                              </div>
+                              {entry.notes && (
+                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 pl-1">{entry.notes}</p>
+                              )}
+                              <p className="text-xs text-gray-400 mt-1 pl-1">by {entry.by}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               {/* Action Buttons Section - Redesigned */}
               <div className="flex gap-4 justify-between pt-8 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl p-6 border-t-4 border-gray-300 dark:border-slate-600">

@@ -1607,6 +1607,10 @@ export default function BusinessNew() {
       // Always use current date and time for submission
       formDataToSend.append('date_submitted', currentDateTime);
 
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      formDataToSend.append('user_id', userId);
+
       // Add action and applicant_id
       formDataToSend.append('action', 'submit_business_permit');
       

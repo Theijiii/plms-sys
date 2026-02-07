@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Shield, Mail, Lock, UserPlus, X, FileText, ShieldCheck } from "lucide-react";
+import Swal from 'sweetalert2';
 import Footer from '../../components/user/Footer';
 import { sendOtp, verifyOtp, registerUser, loginUser, getUserProfile } from "../../services/AuthService";
 import { logLogin, logRegistration } from "../../services/ActivityLogger";
@@ -49,6 +50,8 @@ export default function Login() {
   const [noMiddleName, setNoMiddleName] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const navigate = useNavigate();
 
@@ -184,17 +187,17 @@ export default function Login() {
     e.preventDefault();
 
     if (!agreeTerms || !agreePrivacy) {
-      alert("Please agree to both Terms of Service and Privacy Policy");
+      Swal.fire({ icon: 'warning', title: 'Agreement Required', text: 'Please agree to both Terms of Service and Privacy Policy.', confirmButtonColor: '#4CAF50' });
       return;
     }
 
     if (!registerForm.firstName || !registerForm.lastName || !registerForm.regEmail || !registerForm.regPassword) {
-      alert("Please fill in all required fields");
+      Swal.fire({ icon: 'error', title: 'Missing Fields', text: 'Please fill in all required fields.', confirmButtonColor: '#4CAF50' });
       return;
     }
 
     if (registerForm.regPassword !== registerForm.confirmPassword) {
-      alert("Passwords do not match");
+      Swal.fire({ icon: 'error', title: 'Password Mismatch', text: 'Passwords do not match. Please try again.', confirmButtonColor: '#4CAF50' });
       return;
     }
 
@@ -203,7 +206,7 @@ export default function Login() {
       const otpResponse = await sendOtp(registerForm.regEmail, "register");
 
       if (!otpResponse.success) {
-        alert(otpResponse.message || "Failed to send OTP");
+        Swal.fire({ icon: 'error', title: 'OTP Failed', text: otpResponse.message || 'Failed to send OTP. Please try again.', confirmButtonColor: '#4CAF50' });
         return;
       }
 
@@ -236,7 +239,7 @@ export default function Login() {
       });
     } catch (err) {
       console.error(err);
-      alert("An error occurred while sending OTP");
+      Swal.fire({ icon: 'error', title: 'Network Error', text: 'An error occurred while sending OTP. Please try again.', confirmButtonColor: '#4CAF50' });
     }
   };
 
@@ -607,19 +610,10 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors duration-200"
                     aria-label="Toggle password visibility"
                   >
-                    {showPassword ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -716,65 +710,74 @@ export default function Login() {
 
       {/* Registration Modal */}
       {showRegisterModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-start justify-center pt-20 px-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-[10px] shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center pt-12 px-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-gray-100 animate-in">
 
-            {/* HEADER – fixed, full-width, clean */}
-            <div className="sticky top-0 w-full bg-white/95 backdrop-blur border-b border-gray-200 px-6 py-4 text-center z-10">
-              <h2 className="text-xl md:text-2xl font-semibold text-green-600">
-                Create your GoServePH account
-              </h2>
+            {/* HEADER */}
+            <div className="sticky top-0 w-full bg-gradient-to-r from-green-600 to-green-700 px-6 py-5 text-center z-10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-lg md:text-xl font-bold text-white">Create your Account</h2>
+                  <p className="text-green-100 text-xs">Fill in all required fields to register</p>
+                </div>
+              </div>
+              <button type="button" onClick={handleCloseRegisterModal} className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-all duration-200">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* FORM AREA */}
             <form 
               id="registerForm" 
-              className="space-y-5 p-6 overflow-y-auto max-h-[calc(80vh-60px)]" 
+              className="space-y-5 p-6 overflow-y-auto max-h-[calc(85vh-80px)]" 
               onSubmit={handleRegisterSubmit}
             >
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-1">First Name<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">First Name<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     name="firstName" 
                     required 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.firstName}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Last Name<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Last Name<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     name="lastName" 
                     required 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.lastName}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Middle Name<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Middle Name<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     id="middleName" 
                     name="middleName" 
                     required 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     value={registerForm.middleName}
                     onChange={handleRegisterInputChange}
                     disabled={noMiddleName}
                   />
-                  <label className="inline-flex items-center mt-2 text-sm">
+                  <label className="inline-flex items-center mt-2 text-sm text-gray-600 cursor-pointer">
                     <input 
                       type="checkbox" 
                       id="noMiddleName" 
-                      className="mr-2"
+                      className="mr-2 rounded text-green-600 focus:ring-green-500"
                       checked={noMiddleName}
                       onChange={handleNoMiddleNameChange}
                     /> 
@@ -783,149 +786,145 @@ export default function Login() {
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Suffix</label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Suffix</label>
                   <input 
                     type="text" 
                     name="suffix" 
                     placeholder="Jr., Sr., III (optional)" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.suffix}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Birthdate<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Birthdate<span className="text-red-500">*</span></label>
                   <input 
                     type="date" 
                     name="birthdate" 
                     required 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.birthdate}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Email Address<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Email Address<span className="text-red-500">*</span></label>
                   <input 
                     type="email" 
                     name="regEmail" 
                     required 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.regEmail}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Mobile Number<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Mobile Number<span className="text-red-500">*</span></label>
                   <input 
                     type="tel" 
                     name="mobile" 
                     required 
                     placeholder="09XXXXXXXXX"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.mobile}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm mb-1">Address<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Address<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     name="address" 
                     required 
                     placeholder="Lot/Unit, Building, Subdivision"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.address}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">House #<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">House #<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     name="houseNumber" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.houseNumber}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Street<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Street<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     name="street" 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.street}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm mb-1">Barangay<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Barangay<span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     name="barangay" 
                     required 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                     value={registerForm.barangay}
                     onChange={handleRegisterInputChange}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Password<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Password<span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input 
-                      type="password" 
+                      type={showRegPassword ? "text" : "password"}
                       id="regPassword" 
                       name="regPassword" 
                       minLength="10" 
                       required 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg pr-10"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg pr-10 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                       value={registerForm.regPassword}
                       onChange={handleRegisterInputChange}
                     />
                     <button 
                       type="button" 
-                      className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
-                      onClick={() => {
-                        const input = document.getElementById('regPassword');
-                        input.type = input.type === 'password' ? 'text' : 'password';
-                      }}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors duration-200"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      aria-label="Toggle password visibility"
                     >
-                      <i className="far fa-eye"></i>
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-1">Confirm Password<span className="text-red-500">*</span></label>
+                  <label className="block text-sm mb-1 font-medium text-gray-700">Confirm Password<span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input 
-                      type="password" 
+                      type={showConfirmPassword ? "text" : "password"}
                       id="confirmPassword" 
                       name="confirmPassword" 
                       minLength="10" 
                       required 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg pr-10"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg pr-10 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                       value={registerForm.confirmPassword}
                       onChange={handleRegisterInputChange}
                     />
                     <button 
                       type="button" 
-                      className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
-                      onClick={() => {
-                        const input = document.getElementById('confirmPassword');
-                        input.type = input.type === 'password' ? 'text' : 'password';
-                      }}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors duration-200"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label="Toggle confirm password visibility"
                     >
-                      <i className="far fa-eye"></i>
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -981,10 +980,10 @@ export default function Login() {
               </div>
 
               {/* Buttons */}
-              <div className="flex justify-end space-x-3 pt-2">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button 
                   type="button" 
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-all duration-200"
                   onClick={handleCloseRegisterModal}
                 >
                   Cancel
@@ -992,8 +991,9 @@ export default function Login() {
 
                 <button 
                   type="submit" 
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] flex items-center gap-2"
                 >
+                  <UserPlus className="w-4 h-4" />
                   Register
                 </button>
               </div>
@@ -1005,18 +1005,21 @@ export default function Login() {
 
       {/* Terms of Service Modal */}
       {showTermsModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">GoServePH Terms of Service Agreement</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto border border-gray-100">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Terms of Service Agreement</h3>
+              </div>
               <button 
                 type="button" 
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-all duration-200"
                 onClick={handleCloseTermsModal}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
             <div className="px-6 py-4 space-y-4 text-sm leading-6">
@@ -1145,13 +1148,13 @@ export default function Login() {
                 </ul>
                 <p>This Agreement and all incorporated policies constitute the entire agreement between you and GoServePH.</p>
             </div>
-            <div className="border-t px-6 py-3 flex justify-end">
+            <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end">
               <button 
                 type="button" 
-                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
                 onClick={handleCloseTermsModal}
               >
-                Close
+                I Understand
               </button>
             </div>
           </div>
@@ -1160,18 +1163,21 @@ export default function Login() {
 
       {/* Privacy Policy Modal */}
       {showPrivacyModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">GoServePH Data Privacy Policy</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto border border-gray-100">
+            <div className="sticky top-0 bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Data Privacy Policy</h3>
+              </div>
               <button 
                 type="button" 
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-all duration-200"
                 onClick={handleClosePrivacyModal}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
            <div className="px-6 py-4 space-y-4 text-sm leading-6">
@@ -1241,13 +1247,13 @@ export default function Login() {
                 </ul>
                 <p>We reserve the right to suspend your Account or the Services if necessary to maintain system integrity and security, or to prevent harm. You waive any right to claim losses that result from a Breach or any action we take to prevent harm.</p>
             </div>
-            <div className="border-t px-6 py-3 flex justify-end">
+            <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end">
               <button 
                 type="button" 
-                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
                 onClick={handleClosePrivacyModal}
               >
-                Close
+                I Understand
               </button>
             </div>
           </div>
@@ -1256,31 +1262,32 @@ export default function Login() {
 
       {/* OTP Verification Modal */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">OTP Verification</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">OTP Verification</h3>
+              </div>
               <button 
                 type="button" 
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-all duration-200"
                 onClick={closeOtpModal}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
             
             <div className="px-6 py-6 space-y-6">
               <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto border-2 border-green-200">
+                  <Mail className="w-8 h-8 text-green-600" />
                 </div>
                 <h4 className="text-lg font-semibold text-gray-900">Enter Verification Code</h4>
-                <p className="text-gray-600 text-sm">
-                  Your verification code has been sent to your email address. Enter the 6-digit code here.
+                <p className="text-gray-500 text-sm">
+                  A 6-digit verification code has been sent to <span className="font-semibold text-gray-700">{otpTargetEmail}</span>
                 </p>
               </div>
 
@@ -1343,17 +1350,15 @@ export default function Login() {
                 </button>
               </form>
 
-              <div className="p-4 rounded-lg border bg-yellow-50 border-yellow-200">
-                <h5 className="text-sm font-medium mb-2 text-yellow-800 flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
+              <div className="p-4 rounded-xl border bg-amber-50 border-amber-200">
+                <h5 className="text-sm font-semibold mb-2 text-amber-800 flex items-center">
+                  <Shield className="w-4 h-4 mr-2 text-amber-600" />
                   Security Notice
                 </h5>
-                <ul className="text-xs space-y-1 text-yellow-700">
-                  <li>• Never share your OTP with anyone</li>
-                  <li>• This OTP will expire in 10 minutes</li>
-                  <li>• Contact support if you didn't request this code</li>
+                <ul className="text-xs space-y-1.5 text-amber-700">
+                  <li className="flex items-start gap-1.5"><span className="mt-0.5 text-amber-500">&#8226;</span> Never share your OTP with anyone</li>
+                  <li className="flex items-start gap-1.5"><span className="mt-0.5 text-amber-500">&#8226;</span> This OTP will expire in 10 minutes</li>
+                  <li className="flex items-start gap-1.5"><span className="mt-0.5 text-amber-500">&#8226;</span> Contact support if you didn't request this code</li>
                 </ul>
               </div>
             </div>

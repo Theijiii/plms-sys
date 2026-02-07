@@ -463,6 +463,10 @@ export default function BusinessSpecialPermitApplication() {
         permit_type: 'SPECIAL'
       };
 
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      formDataToSend.append('user_id', userId);
+
       // Append form fields
       Object.entries(formFields).forEach(([key, value]) => {
         formDataToSend.append(key, value);

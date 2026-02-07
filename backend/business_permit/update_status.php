@@ -52,7 +52,7 @@ try {
     $params = [];
     $types = "";
 
-    if ($status && in_array($status, ['PENDING', 'APPROVED', 'REJECTED', 'COMPLIANCE'])) {
+    if ($status && in_array($status, ['PENDING', 'APPROVED', 'REJECTED', 'COMPLIANCE', 'UNDER_REVIEW', 'DOCUMENT_VERIFICATION', 'PAYMENT_VERIFICATION', 'FOR_MANAGER_APPROVAL', 'READY_FOR_RELEASE', 'SITE_INSPECTION_SCHEDULED', 'PERMIT_PROCESSING', 'PRINTING_PROCESSING', 'FIELD_INSPECTION_SCHEDULED'])) {
         $updates[] = "status = ?";
         $params[] = $status;
         $types .= "s";
