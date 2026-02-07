@@ -11,6 +11,10 @@ import {
   ChevronRight,
   FileText,
   RefreshCw,
+  CalendarClock,
+  Loader2,
+  CalendarDays,
+  Save,
 } from "lucide-react";
 
 export default function IssuedPermits() {
@@ -32,6 +36,13 @@ export default function IssuedPermits() {
 
   // Detail modal
   const [selectedPermit, setSelectedPermit] = useState(null);
+
+  // Expiration modal
+  const [expirationModal, setExpirationModal] = useState(null);
+  const [editApprovedDate, setEditApprovedDate] = useState("");
+  const [editExpirationDate, setEditExpirationDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
 
   const fetchPermits = async () => {
     setLoading(true);
@@ -164,6 +175,61 @@ export default function IssuedPermits() {
   useEffect(() => {
     if (page > totalPages) setPage(1);
   }, [totalPages]);
+
+  const openExpirationModal = (permit) => {
+    const today = new Date().toISOString().split("T")[0];
+    const approvedVal = permit.approvedDate ? permit.approvedDate.split(" ")[0] : today;
+    setEditApprovedDate(approvedVal);
+    const oneYearLater = new Date(approvedVal);
+    oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+    setEditExpirationDate(permit.expirationDate ? permit.expirationDate.split(" ")[0] : oneYearLater.toISOString().split("T")[0]);
+    setExpirationModal(permit);
+    setSaveMessage(null);
+  };
+
+  const handleApprovedDateChange = (val) => {
+    setEditApprovedDate(val);
+    if (val) {
+      const d = new Date(val);
+      d.setFullYear(d.getFullYear() + 1);
+      setEditExpirationDate(d.toISOString().split("T")[0]);
+    }
+  };
+
+  const saveExpiration = async () => {
+    if (!expirationModal) return;
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      const res = await fetch("/backend/api/update_expiration.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          permit_id: expirationModal.id,
+          permit_category: expirationModal.permitCategory,
+          approved_date: editApprovedDate,
+          expiration_date: editExpirationDate,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveMessage({ type: "success", text: "Expiration date saved successfully! Users can now see this in their tracker." });
+        setTimeout(() => {
+          setExpirationModal(null);
+          setSaveMessage(null);
+          fetchPermits();
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Save failed");
+      }
+    } catch (err) {
+      console.error("Save expiration error:", err);
+      setSaveMessage({ type: "error", text: "Failed to save: " + err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const exportCSV = () => {
     const header = ["ID", "Permit Category", "Type", "Applicant", "Business/Purpose", "Email", "Contact", "Approved Date", "Expiration Date", "Status", "Days Until Expiry"];
@@ -381,12 +447,21 @@ export default function IssuedPermits() {
                     </td>
                     <td className="p-3">{getExpiryBadge(p)}</td>
                     <td className="p-3">
-                      <button
-                        onClick={() => setSelectedPermit(p)}
-                        className="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-                      >
-                        View
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setSelectedPermit(p)}
+                          className="px-2 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => openExpirationModal(p)}
+                          className="px-2 py-1 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-1"
+                          title="Set expiration date"
+                        >
+                          <CalendarClock className="w-3 h-3" /> Set Expiry
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -514,12 +589,118 @@ export default function IssuedPermits() {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => { setSelectedPermit(null); openExpirationModal(selectedPermit); }}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-1"
+              >
+                <CalendarClock className="w-4 h-4" /> Set Expiration
+              </button>
               <button
                 onClick={() => setSelectedPermit(null)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set Expiration Modal */}
+      {expirationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !saving && setExpirationModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 z-10 mx-4">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-emerald-600" />
+                  Generate Expiration Date
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">Set approval and expiration dates for this permit. This will be visible to the applicant in their tracker.</p>
+              </div>
+              <button onClick={() => !saving && setExpirationModal(null)} className="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-3 mb-4">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-400 text-xs">Permit ID</span>
+                  <p className="font-mono font-medium">{expirationModal.id}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-xs">Category</span>
+                  <p className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getCategoryColor(expirationModal.permitCategory)}`}>
+                    {expirationModal.permitCategory}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-400 text-xs">Applicant</span>
+                  <p className="font-medium">{expirationModal.applicantName || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Approved Date</label>
+                <input
+                  type="date"
+                  value={editApprovedDate}
+                  onChange={(e) => handleApprovedDateChange(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+                <p className="text-xs text-gray-400 mt-1">The date this permit was officially approved</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
+                <input
+                  type="date"
+                  value={editExpirationDate}
+                  onChange={(e) => setEditExpirationDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+                <p className="text-xs text-gray-400 mt-1">Defaults to 1 year after approved date. Adjust if needed.</p>
+              </div>
+
+              {editApprovedDate && editExpirationDate && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm">
+                  <p className="text-emerald-800 font-medium">Validity Period:</p>
+                  <p className="text-emerald-700">
+                    {formatDate(editApprovedDate)} &rarr; {formatDate(editExpirationDate)}
+                    <span className="text-emerald-500 ml-1">
+                      ({Math.round((new Date(editExpirationDate) - new Date(editApprovedDate)) / 86400000)} days)
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              {saveMessage && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  saveMessage.type === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"
+                }`}>
+                  {saveMessage.text}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => !saving && setExpirationModal(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveExpiration}
+                disabled={saving || !editApprovedDate || !editExpirationDate}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-1 disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {saving ? "Saving..." : "Save Expiration"}
               </button>
             </div>
           </div>
