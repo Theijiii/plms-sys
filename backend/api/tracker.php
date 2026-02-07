@@ -57,10 +57,14 @@ try {
     $conn = new mysqli('localhost', 'eplms_paul', 'mypassword', 'eplms_business_permit_db');
     if (!$conn->connect_error) {
         $conn->set_charset("utf8mb4");
-        $query = "SELECT * FROM business_permit_applications WHERE email_address = ? ORDER BY submission_date DESC";
+        $query = "SELECT * FROM business_permit_applications WHERE email_address = ? " . ($userId > 0 ? "OR user_id = ? " : "") . "ORDER BY submission_date DESC";
         $stmt = $conn->prepare($query);
         if ($stmt) {
-            $stmt->bind_param("s", $userEmail);
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result) {
@@ -99,10 +103,14 @@ try {
     $conn = new mysqli('localhost', 'eplms_karl', 'mypassword', 'eplms_barangay_permit_db');
     if (!$conn->connect_error) {
         $conn->set_charset("utf8mb4");
-        $query = "SELECT * FROM barangay_permit WHERE email = ? ORDER BY created_at DESC";
+        $query = "SELECT * FROM barangay_permit WHERE email = ? " . ($userId > 0 ? "OR user_id = ? " : "") . "ORDER BY created_at DESC";
         $stmt = $conn->prepare($query);
         if ($stmt) {
-            $stmt->bind_param("s", $userEmail);
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result) {
@@ -187,10 +195,14 @@ try {
     $conn = new mysqli('localhost', 'eplms_kobe', 'mypassword', 'eplms_franchise_applications');
     if (!$conn->connect_error) {
         $conn->set_charset("utf8mb4");
-        $query = "SELECT * FROM franchise_permit_applications WHERE email = ? ORDER BY created_at DESC";
+        $query = "SELECT * FROM franchise_permit_applications WHERE email = ? " . ($userId > 0 ? "OR user_id = ? " : "") . "ORDER BY created_at DESC";
         $stmt = $conn->prepare($query);
         if ($stmt) {
-            $stmt->bind_param("s", $userEmail);
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result) {

@@ -68,6 +68,7 @@ export default function PermitTracker() {
       }
 
       const data = await response.json();
+      console.log('[PermitTracker] API response:', { total: data.total, appCount: data.applications?.length, email: data.user_email, userId: data.user_id });
 
       if (data.success) {
         setTracking(data.applications || []);
@@ -590,11 +591,11 @@ export default function PermitTracker() {
   };
 
   return (
-    <div className="mx-1 mt-1 p-6 dark:bg-slate-900 bg-white dark:text-slate-300 rounded-lg min-h-screen flex flex-col">
-      <h1 className="text-xl md:text-3xl font-bold mb-2 text-center">
+    <div className="mx-1 mt-1 p-6 bg-[#FBFBFB] dark:bg-slate-900 text-[#4D4A4A] dark:text-slate-300 rounded-lg min-h-screen flex flex-col">
+      <h1 className="text-xl md:text-3xl font-bold mb-2 text-center text-[#4D4A4A] dark:text-white">
         E-Permit Tracker
       </h1>
-      <p className="mb-6 text-center text-sm text-gray-600 dark:text-gray-400">
+      <p className="mb-6 text-center text-sm text-[#4D4A4A]/70 dark:text-gray-400">
         Track the status of all your permit applications in one place. <br />
         Search, filter, and manage your applications efficiently.
       </p>
@@ -602,52 +603,52 @@ export default function PermitTracker() {
       {/* Statistics Dashboard */}
       {!loading && !error && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4 shadow-lg">
+          <div className="bg-[#EBF3FC] border border-[#C9DDFB] rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <FileText className="w-8 h-8 opacity-80" />
-              <span className="text-2xl font-bold">{statistics.total}</span>
+              <FileText className="w-7 h-7 text-[#4A90E2]" />
+              <span className="text-2xl font-bold text-[#4A90E2]">{statistics.total}</span>
             </div>
-            <p className="text-xs font-medium opacity-90">Total Applications</p>
+            <p className="text-xs font-medium text-[#4D4A4A]">Total Applications</p>
           </div>
           
-          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 shadow-lg">
+          <div className="bg-[#E8F5E9] border border-[#C8E6C9] rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <CheckCircle className="w-8 h-8 opacity-80" />
-              <span className="text-2xl font-bold">{statistics.approved}</span>
+              <CheckCircle className="w-7 h-7 text-[#4CAF50]" />
+              <span className="text-2xl font-bold text-[#4CAF50]">{statistics.approved}</span>
             </div>
-            <p className="text-xs font-medium opacity-90">Approved</p>
+            <p className="text-xs font-medium text-[#4D4A4A]">Approved</p>
           </div>
           
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-lg p-4 shadow-lg">
+          <div className="bg-[#FFF8E1] border border-[#FFECB3] rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <Clock className="w-8 h-8 opacity-80" />
-              <span className="text-2xl font-bold">{statistics.pending}</span>
+              <Clock className="w-7 h-7 text-[#FDA811]" />
+              <span className="text-2xl font-bold text-[#FDA811]">{statistics.pending}</span>
             </div>
-            <p className="text-xs font-medium opacity-90">Pending</p>
+            <p className="text-xs font-medium text-[#4D4A4A]">Pending</p>
           </div>
           
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg p-4 shadow-lg">
+          <div className="bg-[#FFF3E0] border border-[#FFE0B2] rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <AlertCircle className="w-8 h-8 opacity-80" />
-              <span className="text-2xl font-bold">{statistics.forCompliance}</span>
+              <AlertCircle className="w-7 h-7 text-[#F57C00]" />
+              <span className="text-2xl font-bold text-[#F57C00]">{statistics.forCompliance}</span>
             </div>
-            <p className="text-xs font-medium opacity-90">For Compliance</p>
+            <p className="text-xs font-medium text-[#4D4A4A]">For Compliance</p>
           </div>
           
-          <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg p-4 shadow-lg">
+          <div className="bg-[#FFEBEE] border border-[#FFCDD2] rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <X className="w-8 h-8 opacity-80" />
-              <span className="text-2xl font-bold">{statistics.rejected}</span>
+              <X className="w-7 h-7 text-[#E53935]" />
+              <span className="text-2xl font-bold text-[#E53935]">{statistics.rejected}</span>
             </div>
-            <p className="text-xs font-medium opacity-90">Rejected</p>
+            <p className="text-xs font-medium text-[#4D4A4A]">Rejected</p>
           </div>
         </div>
       )}
 
       {/* Applicant Info */}
-      <div className="w-full max-w-2xl mx-auto mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+      <div className="w-full max-w-2xl mx-auto mb-6 p-4 bg-[#EBF3FC] dark:bg-blue-900/20 rounded-lg border border-[#C9DDFB] dark:border-blue-800">
         <div className="text-center">
-          <h3 className="font-semibold text-blue-800 dark:text-blue-300 text-sm">Applicant Information</h3>
+          <h3 className="font-semibold text-[#4A90E2] dark:text-blue-300 text-sm">Applicant Information</h3>
           <p className="text-sm"><strong>Name:</strong> {user?.fullName || user?.username || 'N/A'}</p>
           <p className="text-sm"><strong>Email:</strong> {user?.email || 'N/A'}</p>
         </div>
@@ -670,7 +671,7 @@ export default function PermitTracker() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-[#4A90E2] hover:bg-[#3A7BD5] text-white rounded-lg transition-colors text-sm"
             >
               <Filter className="w-4 h-4" />
               {showFilters ? 'Hide' : 'Show'} Filters
@@ -678,7 +679,7 @@ export default function PermitTracker() {
             
             <button
               onClick={fetchApplications}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-[#4CAF50] hover:bg-[#43A047] text-white rounded-lg transition-colors text-sm"
               disabled={loading}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -687,7 +688,7 @@ export default function PermitTracker() {
             
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-[#4A90E2]/80 hover:bg-[#4A90E2] text-white rounded-lg transition-colors text-sm"
               disabled={tracking.length === 0}
             >
               <FileDown className="w-4 h-4" />
@@ -698,7 +699,7 @@ export default function PermitTracker() {
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-[#E9E7E7] dark:border-gray-700">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Permit Type Filter */}
               <div>
@@ -755,12 +756,12 @@ export default function PermitTracker() {
             </div>
             
             <div className="mt-3 flex justify-between items-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
+              <p className="text-xs text-[#4D4A4A]/70 dark:text-gray-400">
                 Showing {sortedTracking.length} of {tracking.length} applications
               </p>
               <button
                 onClick={clearFilters}
-                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                className="text-xs text-[#4A90E2] hover:text-[#3A7BD5] dark:text-blue-400 dark:hover:text-blue-300 font-medium"
               >
                 Clear All Filters
               </button>
@@ -771,16 +772,16 @@ export default function PermitTracker() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center flex-grow py-12">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading your applications...</p>
+          <Loader2 className="w-12 h-12 text-[#4A90E2] animate-spin mb-4" />
+          <p className="text-[#4D4A4A]/70 dark:text-gray-400">Loading your applications...</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center flex-grow py-12">
-          <X className="w-12 h-12 text-red-500 mb-4" />
-          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+          <X className="w-12 h-12 text-[#E53935] mb-4" />
+          <p className="text-[#E53935] dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={fetchApplications}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-[#4A90E2] hover:bg-[#3A7BD5] text-white rounded-lg transition-colors"
           >
             Retry
           </button>
@@ -798,8 +799,8 @@ export default function PermitTracker() {
       ) : (
         <div className="space-y-4">
           <div className="overflow-x-auto flex-grow">
-            <table className="w-full bg-white dark:bg-slate-800 shadow rounded-lg">
-              <thead className="bg-gray-50 dark:bg-slate-700">
+            <table className="w-full bg-white dark:bg-slate-800 rounded-lg border border-[#E9E7E7] dark:border-gray-700">
+              <thead className="bg-[#FBFBFB] dark:bg-slate-700">
                 <tr>
                   <th 
                     onClick={() => handleSort('id')}
@@ -945,7 +946,7 @@ export default function PermitTracker() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 px-4 py-3 rounded-lg shadow">
+            <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 px-4 py-3 rounded-lg border border-[#E9E7E7] dark:border-gray-700">
               <div className="flex items-center gap-2 mb-3 md:mb-0">
                 <label className="text-sm text-gray-700 dark:text-gray-300">Items per page:</label>
                 <select
@@ -998,8 +999,8 @@ export default function PermitTracker() {
                         onClick={() => setCurrentPage(pageNum)}
                         className={`px-3 py-1 border rounded text-sm ${
                           currentPage === pageNum
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-slate-700'
+                            ? 'bg-[#4A90E2] text-white border-[#4A90E2]'
+                            : 'border-[#E9E7E7] dark:border-gray-600 hover:bg-[#EBF3FC] dark:hover:bg-slate-700'
                         }`}
                       >
                         {pageNum}
@@ -1033,7 +1034,7 @@ export default function PermitTracker() {
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg z-10">
+            <div className="sticky top-0 bg-[#4A90E2] text-white p-6 rounded-t-lg z-10">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold mb-1">Complete Application Details</h2>
@@ -1264,8 +1265,8 @@ export default function PermitTracker() {
                   onClick={() => downloadPermit(selectedPermit)}
                   className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                     selectedPermit.status === 'Approved'
-                      ? 'bg-green-500 hover:bg-green-600 text-white'
-                      : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      ? 'bg-[#4CAF50] hover:bg-[#43A047] text-white'
+                      : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-400 cursor-not-allowed'
                   }`}
                   disabled={selectedPermit.status !== 'Approved'}
                 >
@@ -1340,7 +1341,7 @@ export default function PermitTracker() {
       <div className="mt-8 text-center">
         <button
           onClick={() => setIsConfirmBackOpen(true)}
-          className="inline-flex items-center gap-2 bg-green-600 hover:bg-orange-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
         >
           <ArrowLeft size={18} />
           Back to Dashboard
@@ -1361,7 +1362,7 @@ export default function PermitTracker() {
               </button>
               <button
                 onClick={() => navigate('/user/dashboard')}
-                className="bg-green-600 hover:bg-orange-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                className="bg-[#4CAF50] hover:bg-[#43A047] text-white font-semibold py-3 px-6 rounded-lg transition-colors"
               >
                 Yes, Go Back
               </button>

@@ -239,18 +239,9 @@ export default function LiquorPermitApplication() {
         [name]: checked
       }));
     } else {
-      // Validate contact number for business_phone field
+      // Clean contact number to digits only (validation on step submit)
       if (name === 'business_phone') {
         const cleaned = value.replace(/\D/g, '');
-        if (cleaned.length > 0 && !cleaned.startsWith('09')) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Invalid Contact Number',
-            text: 'Contact number must start with 09',
-            confirmButtonColor: '#4A90E2'
-          });
-          return;
-        }
         setFormData(prev => ({
           ...prev,
           [name]: cleaned
@@ -943,7 +934,11 @@ export default function LiquorPermitApplication() {
       if (!formData.business_name.trim()) newErrors.business_name = 'Business name is required';
       if (!formData.business_address.trim()) newErrors.business_address = 'Business address is required';
       if (!formData.business_email.trim()) newErrors.business_email = 'Business email is required';
-      if (!formData.business_phone.trim()) newErrors.business_phone = 'Business phone is required';
+      if (!formData.business_phone.trim()) {
+        newErrors.business_phone = 'Business phone is required';
+      } else if (!formData.business_phone.startsWith('09') || formData.business_phone.length !== 11) {
+        newErrors.business_phone = 'Contact number must start with 09 and be 11 digits';
+      }
       if (!formData.business_type) newErrors.business_type = 'Business type is required';
       if (!formData.business_nature) newErrors.business_nature = 'Business nature is required';
       

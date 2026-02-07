@@ -154,6 +154,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         error_log("Insert successful. Amendment ID: " . $amendmentId . ", Applicant ID: " . $applicantId);
         
         // ====== 6. HANDLE FILE UPLOADS ======
+        // Create amendment_documents table if it doesn't exist
+        $conn->query("
+            CREATE TABLE IF NOT EXISTS amendment_documents (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                amendment_id INT NOT NULL,
+                document_type VARCHAR(255) NOT NULL,
+                document_name VARCHAR(255) NOT NULL,
+                file_path VARCHAR(500) NOT NULL,
+                file_type VARCHAR(100),
+                file_size INT,
+                upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_amendment_id (amendment_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        
         $fileTypes = [
             'previous_permit_file' => 'Previous Mayor\'s Permit',
             'tax_receipt_file' => 'Business Tax Receipt',
@@ -212,10 +227,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Save relative path to database
                         $relativeFilePath = $uploadDir . $fileName;
                         
-                        // Save to database
+                        // Save to database - try amendment_documents first, fallback to application_documents
+                        $docSaved = false;
+                        
+                        // Try amendment_documents table first (no FK constraint to business_permit_applications)
                         $docStmt = $conn->prepare("
-                            INSERT INTO application_documents 
-                            (permit_id, document_type, document_name, file_path, file_type, file_size, upload_date) 
+                            INSERT INTO amendment_documents 
+                            (amendment_id, document_type, document_name, file_path, file_type, file_size, upload_date) 
                             VALUES (?, ?, ?, ?, ?, ?, NOW())
                         ");
                         
@@ -225,24 +243,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $amendmentId,
                                 $docType,
                                 $originalName,
-                                $relativeFilePath, // Store relative path
+                                $relativeFilePath,
                                 $file['type'],
                                 $fileSize
                             );
                             
-                            if ($docStmt->execute()) {
-                                $uploadedFiles[] = [
-                                    'field' => $fieldName,
-                                    'original_name' => $originalName,
-                                    'saved_name' => $fileName,
-                                    'size' => $fileSize,
-                                    'relative_path' => $relativeFilePath
-                                ];
-                                $filesSavedCount++;
-                                error_log("✓ File saved: " . $fileName . " (" . $fileSize . " bytes)");
+                            try {
+                                if ($docStmt->execute()) {
+                                    $docSaved = true;
+                                }
+                            } catch (Exception $e) {
+                                error_log("amendment_documents insert failed: " . $e->getMessage());
                             }
                             $docStmt->close();
                         }
+                        
+                        // Fallback: try application_documents with business_permit_id from POST
+                        if (!$docSaved) {
+                            $bpPermitId = $_POST['business_permit_id'] ?? '';
+                            // Look up the numeric permit_id from business_permit_applications
+                            $lookupStmt = $conn->prepare("SELECT permit_id FROM business_permit_applications WHERE permit_id = ? OR applicant_id = ? LIMIT 1");
+                            $numericPermitId = null;
+                            if ($lookupStmt) {
+                                $lookupStmt->bind_param('ss', $bpPermitId, $bpPermitId);
+                                $lookupStmt->execute();
+                                $lookupResult = $lookupStmt->get_result();
+                                if ($row = $lookupResult->fetch_assoc()) {
+                                    $numericPermitId = (int)$row['permit_id'];
+                                }
+                                $lookupStmt->close();
+                            }
+                            
+                            if ($numericPermitId) {
+                                $docStmt2 = $conn->prepare("
+                                    INSERT INTO application_documents 
+                                    (permit_id, document_type, document_name, file_path, file_type, file_size, upload_date) 
+                                    VALUES (?, ?, ?, ?, ?, ?, NOW())
+                                ");
+                                if ($docStmt2) {
+                                    $docStmt2->bind_param(
+                                        'issssi',
+                                        $numericPermitId,
+                                        $docType,
+                                        $originalName,
+                                        $relativeFilePath,
+                                        $file['type'],
+                                        $fileSize
+                                    );
+                                    try {
+                                        $docStmt2->execute();
+                                        $docSaved = true;
+                                    } catch (Exception $e) {
+                                        error_log("application_documents fallback insert failed: " . $e->getMessage());
+                                    }
+                                    $docStmt2->close();
+                                }
+                            }
+                        }
+                        
+                        // File is already saved to disk regardless of DB record
+                        $uploadedFiles[] = [
+                            'field' => $fieldName,
+                            'original_name' => $originalName,
+                            'saved_name' => $fileName,
+                            'size' => $fileSize,
+                            'relative_path' => $relativeFilePath,
+                            'db_saved' => $docSaved
+                        ];
+                        $filesSavedCount++;
+                        error_log("✓ File saved: " . $fileName . " (" . $fileSize . " bytes) DB: " . ($docSaved ? 'yes' : 'no'));
                     }
                 } else {
                     error_log("Failed to move uploaded file: " . $file['tmp_name']);
