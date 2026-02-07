@@ -554,7 +554,7 @@ const handleSubmit = async () => {
     console.log('formData:', formData);
     console.log('=============================');
 
-    // Append all text fields
+    // Append all text fields (excluding signature which will be handled separately)
     const formFields = {
       applicant_id: applicantId,
       business_permit_id: formData.business_permit_id,
@@ -570,7 +570,6 @@ const handleSubmit = async () => {
       amendment_type: selectedType, // This is CRITICAL
       amendment_reason: formData.amendment_reason,
       effective_date: formData.effective_date,
-      applicant_signature: formData.applicant_signature,
       date_submitted: formData.date_submitted,
       date_submitted_time: formData.date_submitted_time,
       status: "pending",
@@ -583,6 +582,27 @@ const handleSubmit = async () => {
       console.log(`Appending ${key}:`, value);
       formDataToSend.append(key, value);
     });
+
+    // Handle signature separately - convert data URL to file to prevent "Data too long" error
+    if (formData.applicant_signature && formData.applicant_signature.startsWith('data:image')) {
+      try {
+        const byteString = atob(formData.applicant_signature.split(',')[1]);
+        const mimeString = formData.applicant_signature.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const signatureFile = new File([blob], 'signature.png', { type: mimeString });
+        formDataToSend.append('applicant_signature', signatureFile);
+        console.log('Signature converted to file:', signatureFile.name, signatureFile.size, 'bytes');
+      } catch (error) {
+        console.error('Error converting signature:', error);
+        showErrorMessage('Failed to process signature. Please try again.');
+        return;
+      }
+    }
 
     // Attach file uploads - general files
     const generalFileFields = [

@@ -78,11 +78,71 @@ export default function RenewalBuilding() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setSubmitStatus({ type: 'success', message: 'Renewal submitted successfully!' });
+    
+    try {
+      const submitData = new FormData();
+      
+      // Add renewal-specific fields
+      submitData.append('permit_action', 'RENEWAL');
+      submitData.append('previous_permit_number', formData.previous_permit_number);
+      submitData.append('previous_permit_expiry', formData.previous_permit_expiry);
+      
+      // Applicant information
+      submitData.append('first_name', formData.first_name);
+      submitData.append('middle_initial', formData.middle_initial || '');
+      submitData.append('last_name', formData.last_name);
+      submitData.append('suffix', formData.suffix || '');
+      submitData.append('contact_no', formData.contact_number);
+      submitData.append('email', formData.email);
+      submitData.append('citizenship', formData.nationality);
+      submitData.append('tin', formData.tin || '');
+      
+      // Building information
+      submitData.append('use_of_permit', formData.building_activity);
+      submitData.append('form_of_ownership', formData.ownership_status);
+      submitData.append('remarks', formData.building_description);
+      submitData.append('total_estimated_cost', formData.capital_investment || '0');
+      
+      // Add files if any
+      if (formData.attachments && formData.attachments.length > 0) {
+        for (let i = 0; i < formData.attachments.length; i++) {
+          submitData.append('attachments', formData.attachments[i]);
+        }
+      }
+      
+      const response = await fetch('/backend/building_permit/building_permit.php', {
+        method: 'POST',
+        body: submitData
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setSubmitStatus({ 
+          type: 'success', 
+          message: `Renewal submitted successfully! Application ID: ${result.data?.application_id || 'N/A'}` 
+        });
+        setIsSubmitting(false);
+        
+        setTimeout(() => {
+          navigate('/user/building/type');
+        }, 2000);
+      } else {
+        throw new Error(result.message || 'Submission failed');
+      }
+      
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitStatus({ 
+        type: 'error', 
+        message: error.message || 'Failed to submit renewal. Please try again.' 
+      });
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const renderStepContent = () => {

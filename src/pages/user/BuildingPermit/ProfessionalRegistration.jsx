@@ -232,29 +232,90 @@ export default function ProfessionalRegistration() {
       }
     });
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Add text fields
+      formDataToSend.append('first_name', formData.first_name);
+      formDataToSend.append('middle_initial', formData.middle_initial || '');
+      formDataToSend.append('last_name', formData.last_name);
+      formDataToSend.append('suffix', formData.suffix || '');
+      formDataToSend.append('birth_date', formData.birth_date);
+      formDataToSend.append('contact_number', formData.contact_number);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('prc_license', formData.prc_license);
+      formDataToSend.append('prc_expiry', formData.prc_expiry);
+      formDataToSend.append('ptr_number', formData.ptr_number);
+      formDataToSend.append('tin', formData.tin);
+      formDataToSend.append('profession', formData.profession);
+      formDataToSend.append('role', formData.role);
+      
+      // Add user_id from localStorage if available
+      const userId = localStorage.getItem('userId') || localStorage.getItem('user_id');
+      if (userId) {
+        formDataToSend.append('user_id', userId);
+      }
+      
+      // Add file uploads
+      if (formData.prc_id_file) {
+        formDataToSend.append('prc_id_file', formData.prc_id_file);
+      }
+      if (formData.ptr_file) {
+        formDataToSend.append('ptr_file', formData.ptr_file);
+      }
+      if (formData.signature_file) {
+        formDataToSend.append('signature_file', formData.signature_file);
+      }
+      
+      // Submit to backend
+      const response = await fetch('/backend/building_permit/professional_registration.php', {
+        method: 'POST',
+        body: formDataToSend
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setIsSubmitting(false);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Registration Submitted!',
+          html: `
+            <div style="font-family: ${COLORS.font};">
+              <p class="mb-2">Your professional registration has been submitted successfully.</p>
+              <p class="text-sm text-gray-600">You will receive a confirmation email shortly.</p>
+              <div class="mt-3 p-3 bg-green-50 rounded text-sm">
+                <p><strong>Registration ID:</strong> ${result.data.registration_id}</p>
+                <p><strong>Status:</strong> ${result.data.status}</p>
+              </div>
+            </div>
+          `,
+          confirmButtonColor: COLORS.success,
+          confirmButtonText: 'Back to Dashboard'
+        }).then(() => {
+          navigate('/user/dashboard');
+        });
+      } else {
+        throw new Error(result.message || 'Submission failed');
+      }
+      
+    } catch (error) {
+      console.error('Submission error:', error);
       setIsSubmitting(false);
       
       Swal.fire({
-        icon: 'success',
-        title: 'Registration Submitted!',
-        html: `
-          <div style="font-family: ${COLORS.font};">
-            <p class="mb-2">Your professional registration has been submitted successfully.</p>
-            <p class="text-sm text-gray-600">You will receive a confirmation email shortly.</p>
-            <div class="mt-3 p-3 bg-green-50 rounded text-sm">
-              <p><strong>Registration ID:</strong> PR-${Date.now().toString().slice(-6)}</p>
-              <p><strong>Status:</strong> Pending Review</p>
-            </div>
-          </div>
-        `,
-        confirmButtonColor: COLORS.success,
-        confirmButtonText: 'Back to Dashboard'
-      }).then(() => {
-        navigate('/user/dashboard');
+        icon: 'error',
+        title: 'Submission Failed',
+        text: error.message || 'Failed to submit professional registration. Please try again.',
+        confirmButtonColor: COLORS.danger
       });
-    }, 1500);
+    }
   };
 
   const renderStepContent = () => {

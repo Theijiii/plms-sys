@@ -57,11 +57,89 @@ export default function OccupancyPermit() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setSubmitStatus({ type: 'success', message: 'Occupancy permit application submitted!' });
+    
+    try {
+      const submitData = new FormData();
+      
+      // Add occupancy-specific fields
+      submitData.append('permit_action', 'OCCUPANCY');
+      submitData.append('permit_group', 'Occupancy Permit');
+      submitData.append('building_permit_number', formData.building_permit_number);
+      
+      // Owner information - parse owner_name into first/last
+      const nameParts = formData.owner_name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      submitData.append('first_name', firstName);
+      submitData.append('last_name', lastName);
+      submitData.append('contact_no', formData.owner_contact);
+      submitData.append('email', formData.owner_contact); // Using contact as placeholder
+      
+      // Professional information
+      submitData.append('prc_license', formData.architect_name);
+      submitData.append('remarks', `Architect: ${formData.architect_name}, Civil Engineer: ${formData.civil_engineer_name}`);
+      
+      // Property address
+      submitData.append('street', formData.property_address);
+      submitData.append('use_of_permit', 'Occupancy');
+      
+      // Reference data
+      submitData.append('tax_dec_no', formData.tax_declaration);
+      submitData.append('barangay_clearance', formData.barangay_clearance);
+      
+      // Add files
+      const fileFields = [
+        'as_built_plans', 'logbook', 'coc', 'electrical_cert', 'sanitary_cert',
+        'mechanical_cert', 'electronics_cert', 'fencing_cert', 'excavation_cert',
+        'demolition_cert', 'fire_safety_cert', 'photographs'
+      ];
+      
+      fileFields.forEach(field => {
+        if (formData[field]) {
+          if (formData[field] instanceof FileList) {
+            for (let i = 0; i < formData[field].length; i++) {
+              submitData.append(field, formData[field][i]);
+            }
+          } else {
+            submitData.append(field, formData[field]);
+          }
+        }
+      });
+      
+      const response = await fetch('/backend/building_permit/building_permit.php', {
+        method: 'POST',
+        body: submitData
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setSubmitStatus({ 
+          type: 'success', 
+          message: `Occupancy permit submitted successfully! Application ID: ${result.data?.application_id || 'N/A'}` 
+        });
+        setIsSubmitting(false);
+        
+        setTimeout(() => {
+          navigate('/user/building/type');
+        }, 2000);
+      } else {
+        throw new Error(result.message || 'Submission failed');
+      }
+      
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitStatus({ 
+        type: 'error', 
+        message: error.message || 'Failed to submit occupancy permit. Please try again.' 
+      });
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const renderStepContent = () => {

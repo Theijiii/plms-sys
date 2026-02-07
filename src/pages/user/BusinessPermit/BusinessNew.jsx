@@ -1445,9 +1445,24 @@ export default function BusinessNew() {
       const now = new Date();
       const currentDateTime = now.toISOString().split('T')[0] + ' ' + now.toTimeString().split(' ')[0];
       
-      // Add all form data
+      // Add all form data with conditional logic
       Object.keys(formData).forEach((fieldName) => {
         const value = formData[fieldName];
+        
+        // Skip sanitation_permit_id if business is not health-related
+        if (fieldName === 'sanitation_permit_id' && !isHealthRelatedBusiness()) {
+          return;
+        }
+        
+        // Skip representative_scanned_id if owner_type_declaration is not Representative
+        if (fieldName === 'representative_scanned_id' && formData.owner_type_declaration !== 'Representative') {
+          return;
+        }
+        
+        // Skip owner_scanned_id (deprecated - using representative_scanned_id instead)
+        if (fieldName === 'owner_scanned_id') {
+          return;
+        }
         
         if (value !== null && value !== undefined && value !== '') {
           if (typeof value === 'number') {
@@ -1477,6 +1492,18 @@ export default function BusinessNew() {
 
       // Add action and applicant_id
       formDataToSend.append('action', 'submit_business_permit');
+      
+      // CRITICAL: Backend expects first_name/last_name/middle_name but form uses owner_* prefix
+      // Send both versions to ensure compatibility
+      if (formData.owner_first_name) {
+        formDataToSend.append('first_name', formData.owner_first_name);
+      }
+      if (formData.owner_last_name) {
+        formDataToSend.append('last_name', formData.owner_last_name);
+      }
+      if (formData.owner_middle_name) {
+        formDataToSend.append('middle_name', formData.owner_middle_name);
+      }
       
       // Add document flags
       const documentFlags = {
