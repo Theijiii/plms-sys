@@ -86,7 +86,7 @@ export default function BusinessNew() {
 
   // State for attachment checkboxes
   const [attachmentChecks, setAttachmentChecks] = useState({
-    barangay_clearance: true,
+    barangay_clearance: false,
     bir_certificate: true,
     lease_or_title: true,
     fsic: true,
@@ -272,7 +272,7 @@ export default function BusinessNew() {
   };
 
   const handleCheckboxChange = (field) => {
-    if (['barangay_clearance', 'bir_certificate', 'lease_or_title', 'fsic', 'owner_valid_id', 'id_picture'].includes(field)) {
+    if (['bir_certificate', 'lease_or_title', 'fsic', 'owner_valid_id', 'id_picture'].includes(field)) {
       return;
     }
     
@@ -1326,10 +1326,9 @@ export default function BusinessNew() {
         missing.push("Owner Valid ID must be verified (click Verify button)");
       }
 
-      // Barangay clearance (file or ID)
-      if (isEmpty(formData.barangay_clearance) && isEmpty(formData.barangay_clearance_id)) {
-        missing.push("Barangay Clearance (file or ID)");
-      } else if (formData.barangay_clearance && documentVerification.barangay_clearance?.isVerified === false) {
+      // Barangay clearance (file or ID) - OPTIONAL
+      // Only validate if provided
+      if (formData.barangay_clearance && documentVerification.barangay_clearance?.isVerified === false) {
         missing.push("Barangay Clearance is INVALID - Please upload a valid document or use ID verification");
       } else if (formData.barangay_clearance && !documentVerification.barangay_clearance?.isVerified) {
         missing.push("Barangay Clearance must be verified (click Verify button)");
@@ -2649,11 +2648,11 @@ export default function BusinessNew() {
               <div className="flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-blue-50">
                   <div className="flex items-center">
                     <div>
-                      <span className="font-medium">Barangay Clearance: <span className="text-red-500">*</span></span>
+                      <span className="font-medium">Barangay Clearance: <span className="text-gray-400">(Optional)</span></span>
                       <p className="text-sm text-gray-600">
-                        {formData.barangay_clearance ? formData.barangay_clearance.name : 'Required'}
+                        {formData.barangay_clearance ? formData.barangay_clearance.name : 'Optional - Upload if available'}
                       </p>
-                      <p className="text-xs text-red-500 font-semibold">* This document is mandatory</p>
+                      <p className="text-xs text-gray-500">This document is optional</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -2664,9 +2663,8 @@ export default function BusinessNew() {
                         onChange={handleFile}
                         accept=".pdf,.jpg,.png,.doc,.docx"
                         className="hidden"
-                        required
                       />
-                      <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.barangay_clearance ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
+                      <div className={`flex items-center gap-1 px-3 py-1 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${!formData.barangay_clearance ? 'border-gray-300 bg-gray-50' : 'border-green-200 bg-green-50'}`} style={{ color: COLORS.secondary }}>
                         <Upload className="w-4 h-4" />
                         {formData.barangay_clearance ? 'Change' : 'Upload'}
                       </div>
