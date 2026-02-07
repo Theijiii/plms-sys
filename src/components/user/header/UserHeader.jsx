@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Activity } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
+import { logLogout } from "../../../services/ActivityLogger";
 
 export default function UserHeader() {
   const [time, setTime] = useState(new Date());
@@ -114,6 +115,9 @@ export default function UserHeader() {
   // ================= LOGOUT =================
   const handleLogout = async () => {
     try {
+      // Log the logout activity before clearing storage
+      logLogout();
+      
       const token = localStorage.getItem("auth_token");
       
       if (token) {
@@ -238,6 +242,13 @@ export default function UserHeader() {
                     onClick={() => setOpen(false)}
                   >
                     <User size={14} className="mr-2" /> My Profile
+                  </Link>
+                  <Link 
+                    to="/user/activity" 
+                    className="flex items-center px-4 py-2 hover:bg-gray-100 text-sm"
+                    onClick={() => setOpen(false)}
+                  >
+                    <Activity size={14} className="mr-2" /> Activity Trail
                   </Link>
                   <button 
                     onClick={handleLogout} 

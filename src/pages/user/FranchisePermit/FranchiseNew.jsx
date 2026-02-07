@@ -954,17 +954,30 @@ export default function FranchiseNew() {
   };
 
   const ID_TYPE_PATTERNS = {
-    "Philippine National ID (PhilSys ID)": ["philsys", "philippine national id", "national id", "phil id", "republic of the philippines", "pambansang pagkakakilanlan", "philippine identification card", "pcn"],
-    "Passport (DFA)": ["passport", "dfa", "department of foreign affairs", "p <", "republic of the philippines passport"],
-    "Driver's License (LTO)": ["driver", "license", "licence", "lto", "land transportation", "department of transportation", "dl no"],
-    "UMID": ["umid", "unified multi-purpose id", "sss", "gsis"],
-    "PRC ID": ["prc", "professional regulation commission", "professional id"],
-    "Voter's ID": ["voter", "comelec", "commission on elections", "voter's identification"],
-    "National ID": ["national id", "philsys", "philippine national id"],
-    "Passport": ["passport", "dfa"],
-    "UMID": ["umid", "sss", "gsis"],
-    "Postal ID": ["postal", "philpost"],
-    "Voter's ID": ["voter", "comelec"]
+    "Driver's License (LTO)": ["driver", "license", "licence", "lto", "land transportation", "department of transportation", "dl no", "non-professional", "professional", "restriction", "conditions"],
+    "Passport (DFA)": ["passport", "dfa", "department of foreign affairs", "p <", "republic of the philippines passport", "date of issue", "date of expiry", "nationality"],
+    "Philippine National ID (PhilSys ID)": ["philsys", "philippine national id", "national id", "phil id", "republic of the philippines", "pambansang pagkakakilanlan", "philippine identification card", "pcn", "philippine identification system"],
+    "UMID": ["umid", "unified multi-purpose id", "unified multi-purpose identification"],
+    "Postal ID": ["postal", "philpost", "philippine postal", "post office", "postal id"],
+    "Voter's ID (COMELEC)": ["voter", "comelec", "commission on elections", "voter's identification", "registered voter", "precinct"],
+    "PRC ID": ["prc", "professional regulation commission", "professional id", "licensed", "registration no", "prc id"],
+    "PhilHealth ID": ["philhealth", "philippine health insurance", "phic", "philhealth id", "member id"],
+    "SSS ID": ["sss", "social security system", "social security", "sss no", "ss number", "sss id"],
+    "GSIS ID (GSIS e-Card)": ["gsis", "government service insurance", "gsis e-card", "e-card", "gsis member"],
+    "TIN ID (BIR)": ["tin", "tax identification", "bir", "bureau of internal revenue", "tin id", "taxpayer"],
+    "Senior Citizen ID": ["senior citizen", "senior", "osca", "office of senior citizens", "elderly", "senior citizen id"],
+    "PWD ID": ["pwd", "person with disability", "disability", "pwd id", "persons with disability", "national council on disability"],
+    "OFW ID (iDOLE Card)": ["ofw", "idole", "overseas filipino worker", "dole", "department of labor", "ofw id", "i-dole"],
+    "Alien Certificate of Registration (ACR)": ["acr", "alien certificate", "alien registration", "bureau of immigration", "immigration", "acr i-card"],
+    "OWWA ID": ["owwa", "overseas workers welfare", "owwa id", "welfare administration"],
+    "Barangay ID / Barangay Certification": ["barangay id", "barangay certification", "barangay certificate", "barangay clearance", "brgy", "punong barangay", "barangay captain"],
+    "NBI Clearance": ["nbi", "national bureau of investigation", "nbi clearance", "no criminal record", "no derogatory"],
+    "Police Clearance": ["police clearance", "police", "pnp", "philippine national police", "clearance certificate"],
+    "Seaman's Book": ["seaman", "seaman's book", "seafarer", "marina", "maritime industry", "seamans book"],
+    "School ID (with current registration)": ["school id", "student", "university", "college", "enrollment", "school year", "student id"],
+    "Company ID (with current employment)": ["company id", "employee", "employee id", "employment", "corporate", "company identification"],
+    "IBP ID (Integrated Bar of the Philippines)": ["ibp", "integrated bar", "bar of the philippines", "attorney", "lawyer", "ibp id"],
+    "HDMF / Pag-IBIG ID": ["hdmf", "pag-ibig", "pagibig", "home development mutual fund", "pag ibig", "hdmf id"]
   };
 
   const detectIDType = (extractedText) => {
@@ -2592,7 +2605,7 @@ export default function FranchiseNew() {
                 )}
               </div>
               
-              {renderInputField('id_type', 'Valid ID Type', 'select', ["Driver's License", "Passport", "National ID", "UMID", "Postal ID", "Voter's ID"], true)}
+              {renderInputField('id_type', 'Valid ID Type', 'select', ["Driver's License (LTO)", "Passport (DFA)", "Philippine National ID (PhilSys ID)", "UMID", "Postal ID", "Voter's ID (COMELEC)", "PRC ID", "PhilHealth ID", "SSS ID", "GSIS ID (GSIS e-Card)", "TIN ID (BIR)", "Senior Citizen ID", "PWD ID", "OFW ID (iDOLE Card)", "Alien Certificate of Registration (ACR)", "OWWA ID", "Barangay ID / Barangay Certification", "NBI Clearance", "Police Clearance", "Seaman's Book", "School ID (with current registration)", "Company ID (with current employment)", "IBP ID (Integrated Bar of the Philippines)", "HDMF / Pag-IBIG ID"], true)}
               
               <div className="relative">
                 <label className="block mb-2 font-medium" style={{ color: COLORS.secondary }}>
@@ -3251,7 +3264,7 @@ export default function FranchiseNew() {
               {[
                 { 
                   name: 'proof_of_residency', 
-                  label: 'Proof of Residency (Optional)', 
+                  label: 'Proof of Residency', 
                   description: 'Utility bill, lease agreement, or any document proving your residency' 
                 },
                 { 
@@ -3267,7 +3280,7 @@ export default function FranchiseNew() {
                 }] : []),
                 { 
                   name: 'lto_or_cr', 
-                  label: 'LTO OR Copy (Optional)', 
+                  label: 'LTO OR Copy', 
                   description: 'Official Receipt from LTO' 
                 },
                 { 

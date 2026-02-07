@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+ini_set('display_errors', '0');
 session_start();
 
 $allowedOrigins = [
@@ -50,107 +52,176 @@ if (empty($userEmail)) {
 
 $allApplications = [];
 
-// Database credentials for each permit type
-$databases = [
-    'business' => [
-        'host' => 'localhost',
-        'user' => 'eplms_paul',
-        'pass' => 'mypassword',
-        'name' => 'eplms_business_permit_db',
-        'table' => 'business_permit',
-        'permitType' => 'Business Permit'
-    ],
-    'barangay' => [
-        'host' => 'localhost',
-        'user' => 'eplms_karl',
-        'pass' => 'mypassword',
-        'name' => 'eplms_barangay_permit_db',
-        'table' => 'barangay_permit',
-        'permitType' => 'Barangay Permit'
-    ],
-    'building' => [
-        'host' => 'localhost',
-        'user' => 'eplms_ella',
-        'pass' => 'mypassword',
-        'name' => 'eplms_building_permit_db',
-        'table' => 'building_permit',
-        'permitType' => 'Building Permit'
-    ],
-    'franchise' => [
-        'host' => 'localhost',
-        'user' => 'eplms_kobe',
-        'pass' => 'mypassword',
-        'name' => 'eplms_franchise_applications',
-        'table' => 'franchise_application',
-        'permitType' => 'Franchise Permit'
-    ]
-];
-
-// Fetch applications from each database
-foreach ($databases as $key => $db) {
-    $conn = new mysqli($db['host'], $db['user'], $db['pass'], $db['name']);
-    
-    if ($conn->connect_error) {
-        error_log("Failed to connect to {$db['name']}: " . $conn->connect_error);
-        continue;
-    }
-    
-    $conn->set_charset("utf8mb4");
-    
-    // Build query with user filtering - CRITICAL: Filter by email AND optionally user_id
-    $query = "SELECT * FROM {$db['table']} WHERE email = ?";
-    $params = [$userEmail];
-    $types = "s";
-    
-    // Add user_id filter if available for extra security
-    if ($userId > 0) {
-        $query .= " AND user_id = ?";
-        $params[] = $userId;
-        $types .= "i";
-    }
-    
-    $query .= " ORDER BY submitted_date DESC";
-    
-    $stmt = $conn->prepare($query);
-    
-    if (!$stmt) {
-        error_log("Failed to prepare statement for {$db['name']}: " . $conn->error);
+// ===== BUSINESS PERMIT =====
+try {
+    $conn = new mysqli('localhost', 'eplms_paul', 'mypassword', 'eplms_business_permit_db');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT * FROM business_permit_applications WHERE email_address = ? ORDER BY submission_date DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("s", $userEmail);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $allApplications[] = [
+                        'id' => $row['permit_id'] ?? 'N/A',
+                        'permitType' => 'Business Permit',
+                        'application_type' => $row['permit_type'] ?? 'New',
+                        'status' => $row['status'] ?? 'Pending',
+                        'applicantName' => trim(($row['owner_first_name'] ?? '') . ' ' . ($row['owner_last_name'] ?? '')),
+                        'businessName' => $row['business_name'] ?? 'N/A',
+                        'email' => $row['email_address'] ?? '',
+                        'address' => $row['home_address'] ?? 'N/A',
+                        'contactNumber' => $row['contact_number'] ?? 'N/A',
+                        'submittedDate' => $row['date_submitted'] ?? $row['submission_date'] ?? null,
+                        'approvedDate' => $row['approved_date'] ?? null,
+                        'expirationDate' => $row['validity_date'] ?? null,
+                        'fees' => $row['capital_investment'] ?? '0.00',
+                        'receiptNumber' => $row['official_receipt_no'] ?? 'N/A',
+                        'user_id' => $row['user_id'] ?? 0,
+                        'remarks' => $row['remarks'] ?? '',
+                        'compliance_notes' => $row['comments'] ?? ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
         $conn->close();
-        continue;
     }
-    
-    // Bind parameters dynamically
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    while ($row = $result->fetch_assoc()) {
-        // Normalize the data structure for consistent frontend display
-        $application = [
-            'id' => $row['id'] ?? $row['permit_id'] ?? 'N/A',
-            'permitType' => $db['permitType'],
-            'application_type' => $row['application_type'] ?? $row['permit_type'] ?? 'New',
-            'status' => $row['status'] ?? 'Pending',
-            'applicantName' => $row['applicant_name'] ?? $row['owner_name'] ?? $row['first_name'] . ' ' . ($row['last_name'] ?? ''),
-            'businessName' => $row['business_name'] ?? $row['establishment_name'] ?? 'N/A',
-            'email' => $row['email'] ?? '',
-            'address' => $row['address'] ?? $row['business_address'] ?? $row['location'] ?? 'N/A',
-            'contactNumber' => $row['contact_number'] ?? $row['phone'] ?? 'N/A',
-            'submittedDate' => $row['submitted_date'] ?? $row['date_submitted'] ?? $row['created_at'] ?? null,
-            'approvedDate' => $row['approved_date'] ?? $row['date_approved'] ?? null,
-            'expirationDate' => $row['expiration_date'] ?? $row['valid_until'] ?? null,
-            'fees' => $row['fees'] ?? $row['total_fees'] ?? '0.00',
-            'receiptNumber' => $row['receipt_number'] ?? $row['or_number'] ?? 'N/A',
-            'user_id' => $row['user_id'] ?? 0,
-            'remarks' => $row['remarks'] ?? '',
-            'compliance_notes' => $row['compliance_notes'] ?? ''
-        ];
-        
-        $allApplications[] = $application;
+} catch (Exception $e) {
+    error_log("Tracker - Business permit error: " . $e->getMessage());
+}
+
+// ===== BARANGAY PERMIT =====
+try {
+    $conn = new mysqli('localhost', 'eplms_karl', 'mypassword', 'eplms_barangay_permit_db');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT * FROM barangay_permit WHERE email = ? ORDER BY created_at DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("s", $userEmail);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $allApplications[] = [
+                        'id' => $row['permit_id'] ?? 'N/A',
+                        'permitType' => 'Barangay Permit',
+                        'application_type' => 'Clearance',
+                        'status' => $row['status'] ?? 'Pending',
+                        'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
+                        'businessName' => 'N/A',
+                        'email' => $row['email'] ?? '',
+                        'address' => trim(($row['house_no'] ?? '') . ' ' . ($row['street'] ?? '') . ', ' . ($row['barangay'] ?? '')),
+                        'contactNumber' => $row['mobile_number'] ?? 'N/A',
+                        'submittedDate' => $row['created_at'] ?? $row['application_date'] ?? null,
+                        'approvedDate' => null,
+                        'expirationDate' => null,
+                        'fees' => $row['clearance_fee'] ?? '0.00',
+                        'receiptNumber' => $row['receipt_number'] ?? 'N/A',
+                        'user_id' => $row['user_id'] ?? 0,
+                        'remarks' => $row['purpose'] ?? '',
+                        'compliance_notes' => $row['comments'] ?? ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
+        $conn->close();
     }
-    
-    $stmt->close();
-    $conn->close();
+} catch (Exception $e) {
+    error_log("Tracker - Barangay permit error: " . $e->getMessage());
+}
+
+// ===== BUILDING PERMIT =====
+try {
+    $conn = new mysqli('localhost', 'eplms_ella', 'mypassword', 'eplms_building_permit_db');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT a.*, ap.first_name, ap.last_name, ap.middle_initial, ap.email, ap.contact_no, ap.home_address 
+                  FROM application a 
+                  JOIN applicant ap ON a.applicant_id = ap.applicant_id 
+                  WHERE ap.email = ? 
+                  ORDER BY a.application_id DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("s", $userEmail);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $allApplications[] = [
+                        'id' => $row['application_id'] ?? 'N/A',
+                        'permitType' => 'Building Permit',
+                        'application_type' => $row['permit_action'] ?? $row['permit_group'] ?? 'New',
+                        'status' => $row['status'] ?? 'Pending',
+                        'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
+                        'businessName' => $row['use_of_permit'] ?? 'N/A',
+                        'email' => $row['email'] ?? '',
+                        'address' => $row['home_address'] ?? 'N/A',
+                        'contactNumber' => $row['contact_no'] ?? 'N/A',
+                        'submittedDate' => $row['proposed_date_of_construction'] ?? null,
+                        'approvedDate' => null,
+                        'expirationDate' => $row['expected_date_of_completion'] ?? null,
+                        'fees' => $row['total_estimated_cost'] ?? '0.00',
+                        'receiptNumber' => 'N/A',
+                        'user_id' => 0,
+                        'remarks' => $row['remarks'] ?? '',
+                        'compliance_notes' => ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
+        $conn->close();
+    }
+} catch (Exception $e) {
+    error_log("Tracker - Building permit error: " . $e->getMessage());
+}
+
+// ===== FRANCHISE PERMIT =====
+try {
+    $conn = new mysqli('localhost', 'eplms_kobe', 'mypassword', 'eplms_franchise_applications');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT * FROM franchise_permit_applications WHERE email = ? ORDER BY created_at DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("s", $userEmail);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $allApplications[] = [
+                        'id' => $row['application_id'] ?? 'N/A',
+                        'permitType' => 'Franchise Permit',
+                        'application_type' => $row['permit_type'] ?? 'New',
+                        'status' => $row['status'] ?? 'Pending',
+                        'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
+                        'businessName' => $row['toda_name'] ?? 'N/A',
+                        'email' => $row['email'] ?? '',
+                        'address' => $row['home_address'] ?? 'N/A',
+                        'contactNumber' => $row['contact_number'] ?? 'N/A',
+                        'submittedDate' => $row['date_submitted'] ?? $row['created_at'] ?? null,
+                        'approvedDate' => $row['date_approved'] ?? null,
+                        'expirationDate' => $row['expiry_date'] ?? null,
+                        'fees' => '0.00',
+                        'receiptNumber' => $row['franchise_fee_or'] ?? 'N/A',
+                        'user_id' => $row['user_id'] ?? 0,
+                        'remarks' => $row['remarks'] ?? '',
+                        'compliance_notes' => $row['notes'] ?? ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
+        $conn->close();
+    }
+} catch (Exception $e) {
+    error_log("Tracker - Franchise permit error: " . $e->getMessage());
 }
 
 // Sort all applications by submitted date (most recent first)

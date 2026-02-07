@@ -3,10 +3,12 @@ import { useLocation, Outlet } from "react-router-dom";
 import AdminHeader from "../components/admin/header/AdminHeader";
 import AdminSidebar from "../components/admin/sidebar/AdminSidebar";
 import AdminSidebarItems from "../components/admin/sidebar/AdminSidebarItems";
+import usePageTracking from "../hooks/usePageTracking";
 
 const AdminLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
+  usePageTracking();
 
   // Breadcrumb logic
   function getBreadcrumb() {
