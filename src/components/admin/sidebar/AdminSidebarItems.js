@@ -11,8 +11,6 @@ import {
   ShieldCheck,
   GraduationCap,
   Activity,
-  Settings2,
-  PieChart,
   ClipboardCheck,
   FileCheck,
 } from "lucide-react";
@@ -42,13 +40,6 @@ const AdminSidebarItems = [
     path: "/admin/businesspermit",
     department: ["business", "super"],
   },
-  {
-    id: "businessProcessing",
-    label: "Business Processing",
-    icon: FileText,
-    path: "/admin/businessprocessing",
-    department: ["business", "super"],
-  },
 
   // BUILDING PERMIT
   {
@@ -63,14 +54,6 @@ const AdminSidebarItems = [
     label: "Permit Applications",
     icon: Building2,
     path: "/admin/buildingpermit",
-    department: ["building", "super"],
-  },
-
-  {
-    id: "buildingProcessing",
-    label: "Building Processing",
-    icon: Settings2,
-    path: "/admin/buildingprocessing",
     department: ["building", "super"],
   },
   {
@@ -95,13 +78,6 @@ const AdminSidebarItems = [
     path: "/admin/franchisepermit",
     department: ["transport", "super"],
   },
-  {
-    id: "franchiseProcessing",
-    label: "Franchise Processing",
-    icon: Settings2,
-    path: "/admin/franchiseprocessing",
-    department: ["transport", "super"],
-  },
 
   {
     id: "brgydashboard",
@@ -115,13 +91,6 @@ const AdminSidebarItems = [
     label: "Clearance Requests",
     icon: ShieldCheck,
     path: "/admin/brgypermit",
-    department: ["barangay", "super"],
-  },
-  {
-    id: "brgyProcessing",
-    label: "Clearance Processing",
-    icon: Settings2,
-    path: "/admin/brgyprocessing",
     department: ["barangay", "super"],
   },
 
@@ -141,15 +110,6 @@ const AdminSidebarItems = [
     icon: ClipboardCheck,
     path: "/admin/requirements",
     department: ["business", "building", "transport", "barangay", "super"],
-  },
-
-  // REPORTS (Super Admin only)
-  {
-    id: "reports",
-    label: "Reports & Analytics",
-    icon: PieChart,
-    path: "/admin/reports",
-    department: ["super"],
   },
 
   // AUDIT TRAIL (Super Admin only)

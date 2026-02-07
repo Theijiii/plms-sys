@@ -62,21 +62,22 @@ try {
                     validity_date,
                     capital_investment
                   FROM business_permit_applications 
-                  WHERE UPPER(status) = 'APPROVED'
-                  ORDER BY approved_date DESC, date_submitted DESC";
+                  ORDER BY date_submitted DESC, application_date DESC";
         
         $result = $conn->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
+                $status = $row['status'] ?? 'Pending';
+                $isApproved = strtoupper($status) === 'APPROVED';
                 $approvedDate = $row['approved_date'] ?? $row['application_date'] ?? $row['date_submitted'] ?? null;
                 $expirationDate = $row['validity_date'] ?? null;
                 
-                if (!$expirationDate && $approvedDate) {
+                if ($isApproved && !$expirationDate && $approvedDate) {
                     $expirationDate = date('Y-m-d', strtotime($approvedDate . ' +1 year'));
                 }
                 
                 $isExpired = false;
-                if ($expirationDate) {
+                if ($isApproved && $expirationDate) {
                     $isExpired = strtotime($expirationDate) < strtotime($now);
                 }
                 
@@ -85,15 +86,17 @@ try {
                     'applicant_id' => $row['applicant_id'] ?? '',
                     'permitCategory' => 'Business Permit',
                     'permitType' => $row['permit_type'] ?? 'New',
+                    'status' => $status,
                     'applicantName' => trim(($row['owner_first_name'] ?? '') . ' ' . ($row['owner_middle_name'] ?? '') . ' ' . ($row['owner_last_name'] ?? '')),
                     'businessName' => $row['business_name'] ?? $row['trade_name'] ?? 'N/A',
                     'email' => $row['email_address'] ?? '',
                     'contactNumber' => $row['contact_number'] ?? 'N/A',
                     'address' => $row['home_address'] ?? 'N/A',
-                    'approvedDate' => $approvedDate,
-                    'expirationDate' => $expirationDate,
+                    'submittedDate' => $row['date_submitted'] ?? $row['application_date'] ?? null,
+                    'approvedDate' => $isApproved ? $approvedDate : null,
+                    'expirationDate' => $isApproved ? $expirationDate : null,
                     'isExpired' => $isExpired,
-                    'daysUntilExpiry' => $expirationDate ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
+                    'daysUntilExpiry' => ($isApproved && $expirationDate) ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
                     'investment' => $row['capital_investment'] ?? '0.00'
                 ];
             }
@@ -128,21 +131,22 @@ try {
                     approved_date,
                     expiration_date
                   FROM barangay_permit 
-                  WHERE LOWER(status) = 'approved'
-                  ORDER BY updated_at DESC, created_at DESC";
+                  ORDER BY created_at DESC, updated_at DESC";
         
         $result = $conn->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
+                $status = $row['status'] ?? 'Pending';
+                $isApproved = strtolower($status) === 'approved';
                 $approvedDate = $row['approved_date'] ?? $row['updated_at'] ?? $row['created_at'] ?? null;
                 $expirationDate = $row['expiration_date'] ?? null;
                 
-                if (!$expirationDate && $approvedDate) {
+                if ($isApproved && !$expirationDate && $approvedDate) {
                     $expirationDate = date('Y-m-d', strtotime($approvedDate . ' +1 year'));
                 }
                 
                 $isExpired = false;
-                if ($expirationDate) {
+                if ($isApproved && $expirationDate) {
                     $isExpired = strtotime($expirationDate) < strtotime($now);
                 }
                 
@@ -151,15 +155,17 @@ try {
                     'applicant_id' => '',
                     'permitCategory' => 'Barangay Permit',
                     'permitType' => 'Clearance',
+                    'status' => $status,
                     'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['middle_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
                     'businessName' => $row['purpose'] ?? 'N/A',
                     'email' => $row['email'] ?? '',
                     'contactNumber' => $row['mobile_number'] ?? 'N/A',
                     'address' => trim(($row['house_no'] ?? '') . ' ' . ($row['street'] ?? '') . ', ' . ($row['barangay'] ?? '')),
-                    'approvedDate' => $approvedDate,
-                    'expirationDate' => $expirationDate,
+                    'submittedDate' => $row['created_at'] ?? null,
+                    'approvedDate' => $isApproved ? $approvedDate : null,
+                    'expirationDate' => $isApproved ? $expirationDate : null,
                     'isExpired' => $isExpired,
-                    'daysUntilExpiry' => $expirationDate ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
+                    'daysUntilExpiry' => ($isApproved && $expirationDate) ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
                     'investment' => '0.00'
                 ];
             }
@@ -197,21 +203,22 @@ try {
                     ap.home_address
                   FROM application a 
                   JOIN applicant ap ON a.applicant_id = ap.applicant_id 
-                  WHERE UPPER(a.status) = 'APPROVED'
-                  ORDER BY a.updated_at DESC, a.application_id DESC";
+                  ORDER BY a.application_id DESC";
         
         $result = $conn->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
+                $status = $row['status'] ?? 'Pending';
+                $isApproved = strtoupper($status) === 'APPROVED';
                 $approvedDate = $row['approved_date'] ?? $row['updated_at'] ?? $row['proposed_date_of_construction'] ?? null;
                 $expirationDate = $row['expiration_date'] ?? null;
                 
-                if (!$expirationDate && $approvedDate) {
+                if ($isApproved && !$expirationDate && $approvedDate) {
                     $expirationDate = date('Y-m-d', strtotime($approvedDate . ' +1 year'));
                 }
                 
                 $isExpired = false;
-                if ($expirationDate) {
+                if ($isApproved && $expirationDate) {
                     $isExpired = strtotime($expirationDate) < strtotime($now);
                 }
                 
@@ -220,15 +227,17 @@ try {
                     'applicant_id' => '',
                     'permitCategory' => 'Building Permit',
                     'permitType' => $row['permit_action'] ?? $row['permit_group'] ?? 'New',
+                    'status' => $status,
                     'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['middle_initial'] ?? '') . ' ' . ($row['last_name'] ?? '')),
                     'businessName' => $row['use_of_permit'] ?? 'N/A',
                     'email' => $row['email'] ?? '',
                     'contactNumber' => $row['contact_no'] ?? 'N/A',
                     'address' => $row['home_address'] ?? 'N/A',
-                    'approvedDate' => $approvedDate,
-                    'expirationDate' => $expirationDate,
+                    'submittedDate' => $row['proposed_date_of_construction'] ?? null,
+                    'approvedDate' => $isApproved ? $approvedDate : null,
+                    'expirationDate' => $isApproved ? $expirationDate : null,
                     'isExpired' => $isExpired,
-                    'daysUntilExpiry' => $expirationDate ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
+                    'daysUntilExpiry' => ($isApproved && $expirationDate) ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
                     'investment' => $row['total_estimated_cost'] ?? '0.00'
                 ];
             }
@@ -263,21 +272,22 @@ try {
                     expiry_date,
                     created_at
                   FROM franchise_permit_applications 
-                  WHERE LOWER(status) = 'approved'
-                  ORDER BY date_approved DESC, created_at DESC";
+                  ORDER BY created_at DESC, date_submitted DESC";
         
         $result = $conn->query($query);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
+                $status = $row['status'] ?? 'Pending';
+                $isApproved = strtolower($status) === 'approved';
                 $approvedDate = $row['date_approved'] ?? $row['created_at'] ?? $row['date_submitted'] ?? null;
                 $expirationDate = $row['expiry_date'] ?? null;
                 
-                if (!$expirationDate && $approvedDate) {
+                if ($isApproved && !$expirationDate && $approvedDate) {
                     $expirationDate = date('Y-m-d', strtotime($approvedDate . ' +1 year'));
                 }
                 
                 $isExpired = false;
-                if ($expirationDate) {
+                if ($isApproved && $expirationDate) {
                     $isExpired = strtotime($expirationDate) < strtotime($now);
                 }
                 
@@ -286,15 +296,17 @@ try {
                     'applicant_id' => '',
                     'permitCategory' => 'Franchise Permit',
                     'permitType' => ($row['permit_subtype'] ?? '') . ' - ' . ($row['permit_type'] ?? 'New'),
+                    'status' => $status,
                     'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['middle_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
                     'businessName' => $row['toda_name'] ?? 'N/A',
                     'email' => $row['email'] ?? '',
                     'contactNumber' => $row['contact_number'] ?? 'N/A',
                     'address' => $row['home_address'] ?? 'N/A',
-                    'approvedDate' => $approvedDate,
-                    'expirationDate' => $expirationDate,
+                    'submittedDate' => $row['date_submitted'] ?? $row['created_at'] ?? null,
+                    'approvedDate' => $isApproved ? $approvedDate : null,
+                    'expirationDate' => $isApproved ? $expirationDate : null,
                     'isExpired' => $isExpired,
-                    'daysUntilExpiry' => $expirationDate ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
+                    'daysUntilExpiry' => ($isApproved && $expirationDate) ? (int)round((strtotime($expirationDate) - strtotime($now)) / 86400) : null,
                     'investment' => '0.00'
                 ];
             }
@@ -307,25 +319,29 @@ try {
 endif;
 
 // Calculate summary stats
-$totalIssued = count($issuedPermits);
+$total = count($issuedPermits);
+$approved = count(array_filter($issuedPermits, fn($p) => strtoupper($p['status']) === 'APPROVED'));
+$pending = count(array_filter($issuedPermits, fn($p) => strtolower($p['status']) === 'pending'));
+$rejected = count(array_filter($issuedPermits, fn($p) => strtolower($p['status']) === 'rejected'));
 $totalExpired = count(array_filter($issuedPermits, fn($p) => $p['isExpired']));
-$totalActive = $totalIssued - $totalExpired;
 $expiringSoon = count(array_filter($issuedPermits, fn($p) => !$p['isExpired'] && $p['daysUntilExpiry'] !== null && $p['daysUntilExpiry'] <= 30 && $p['daysUntilExpiry'] >= 0));
 
-// Sort by expiration date (soonest first)
+// Sort by date descending (most recent first)
 usort($issuedPermits, function($a, $b) {
-    $dateA = strtotime($a['expirationDate'] ?? '2099-12-31');
-    $dateB = strtotime($b['expirationDate'] ?? '2099-12-31');
-    return $dateA - $dateB;
+    $dateA = strtotime($a['submittedDate'] ?? $a['approvedDate'] ?? '1970-01-01');
+    $dateB = strtotime($b['submittedDate'] ?? $b['approvedDate'] ?? '1970-01-01');
+    return $dateB - $dateA;
 });
 
 echo json_encode([
     'success' => true,
-    'message' => 'Issued permits fetched successfully',
+    'message' => 'Permits fetched successfully',
     'permits' => $issuedPermits,
     'stats' => [
-        'totalIssued' => $totalIssued,
-        'totalActive' => $totalActive,
+        'total' => $total,
+        'approved' => $approved,
+        'pending' => $pending,
+        'rejected' => $rejected,
         'totalExpired' => $totalExpired,
         'expiringSoon' => $expiringSoon
     ]
