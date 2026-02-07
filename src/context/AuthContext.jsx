@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logLogout } from '../services/ActivityLogger';
 
 const AuthContext = createContext(null);
 
@@ -237,6 +238,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      logLogout();
       const token = localStorage.getItem('auth_token');
       
       await fetch('/backend/login/logout.php', {

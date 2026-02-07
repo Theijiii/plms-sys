@@ -19,7 +19,6 @@ import BuildingNew from "./pages/user/BuildingPermit/BuildingNew"
 import BuildingPermitType from "./pages/user/BuildingPermit/BuildingPermitType"
 import RenewalBuilding from "./pages/user/BuildingPermit/RenewalBuilding"
 import AncillaryPermits from "./pages/user/BuildingPermit/Ancillary/Ancillary"
-import OccupancyPermit from "./pages/user/BuildingPermit/OccupancyPermit"
 import ProfessionalRegistration from "./pages/user/BuildingPermit/ProfessionalRegistration"
 import FranchisePermitType from "./pages/user/FranchisePermit/FranchisePermitType"
 import FranchiseNew from "./pages/user/FranchisePermit/FranchiseNew"
@@ -98,7 +97,6 @@ function App() {
           <Route path="building/type" element={<BuildingPermitType />} />
           <Route path="building/renewal" element={<RenewalBuilding />} />
           <Route path="building/ancillary" element={<AncillaryPermits />} />
-          <Route path="building/occupancy" element={<OccupancyPermit />} />
           <Route path="building/professional" element={<ProfessionalRegistration />} />
 
           {/* Franchise routes */}

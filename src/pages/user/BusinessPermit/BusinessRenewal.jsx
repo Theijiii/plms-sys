@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Upload, Check, X, Eye, FileText, Calendar, Search, AlertCircle, Loader2, Shield } from "lucide-react";
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {
@@ -933,6 +934,7 @@ export default function BusinessRenewal() {
       }
 
       showSuccessMessage(data.message || "Business permit renewal submitted successfully!");
+      logPermitSubmission("Business Permit", data.permit_id || "", { permit_type: "Renewal" });
       
       setTimeout(() => {
         navigate("/user/permittracker");

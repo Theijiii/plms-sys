@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Upload, Check, X, Eye, FileText, AlertCircle, Loader2, Shield } from "lucide-react";
 import { createWorker } from 'tesseract.js';
 import Swal from 'sweetalert2';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 const COLORS = {
   primary: '#4A90E2',
@@ -861,6 +862,7 @@ export default function BarangayNew() {
       // Success
       if (data.success) {
         await showSuccessMessage(data.message || "Application submitted successfully!");
+        logPermitSubmission("Barangay Permit", data.permit_id || "", { permit_type: formData.permit_type });
         
         // Reset form after successful submission
         setFormData({

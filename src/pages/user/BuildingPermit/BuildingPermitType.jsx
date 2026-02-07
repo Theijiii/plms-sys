@@ -20,7 +20,6 @@ export default function BuildingPermitType({ building_permit_id }) {
     { id: 'PROFESSIONAL', title: 'PROFESSIONAL / ENGINEER', description: 'Register yourself as a professional or engineer to be available for building projects.', color: 'bg-orange-500 hover:bg-orange-600' },
     { id: 'NEW', title: 'NEW', description: 'Apply for a new building permit for your project.', color: 'bg-green-500 hover:bg-green-600' },
     { id: 'RENEWAL', title: 'RENEWAL', description: 'Renew your current building permit quickly and easily.w your existing building permit', color: 'bg-blue-500 hover:bg-blue-600' },
-    { id: 'OCCUPANCY', title: 'OCCUPANCY', description: 'Apply for a permit to legally occupy your building.', color: 'bg-pink-500 hover:bg-pink-600' },
     { id: 'ANCILLARY', title: 'ANCILLARY PERMITS', description: 'Apply for the required ancillary permits needed for specialized works in your building project.', color: 'bg-yellow-500 hover:bg-yellow-600' },
   ];
 
@@ -51,7 +50,6 @@ const handleTypeSelection = (typeId) => {
       const routeMap = {
         NEW: '/user/building/new',
         RENEWAL: '/user/building/renewal',
-        OCCUPANCY: '/user/building/occupancy',
         PROFESSIONAL: '/user/building/professional',
         ANCILLARY: '/user/building/ancillary',
       };

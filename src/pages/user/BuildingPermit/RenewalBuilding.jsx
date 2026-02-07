@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import { logPermitSubmission } from '../../../services/ActivityLogger';
+import NameFields from '../../../components/common/NameFields';
 
 export default function RenewalBuilding() {
     const navigate = useNavigate();
@@ -96,6 +98,7 @@ export default function RenewalBuilding() {
       submitData.append('email', formData.email);
       submitData.append('citizenship', formData.nationality);
       submitData.append('tin', formData.tin || '');
+      submitData.append('home_address', formData.building_name || '');
       
       // Building information
       submitData.append('use_of_permit', formData.building_activity);
@@ -106,7 +109,7 @@ export default function RenewalBuilding() {
       // Add files if any
       if (formData.attachments && formData.attachments.length > 0) {
         for (let i = 0; i < formData.attachments.length; i++) {
-          submitData.append('attachments', formData.attachments[i]);
+          submitData.append('attachments[]', formData.attachments[i]);
         }
       }
       
@@ -122,6 +125,7 @@ export default function RenewalBuilding() {
       const result = await response.json();
       
       if (result.success) {
+        logPermitSubmission("Building Permit", result.data?.application_id || "", { permit_type: "Renewal" });
         setSubmitStatus({ 
           type: 'success', 
           message: `Renewal submitted successfully! Application ID: ${result.data?.application_id || 'N/A'}` 
@@ -249,9 +253,9 @@ export default function RenewalBuilding() {
                 <label className="block mb-2 font-medium">Ownership Status *</label>
                 <select name="ownership_status" value={formData.ownership_status} onChange={handleChange} className="w-full p-3 border rounded-lg" required>
                   <option value="">Select Status</option>
-                  <option value="Owned">Owned</option>
-                  <option value="Leased">Leased</option>
-                  <option value="Rented">Rented</option>
+                  <option value="Individual">Individual</option>
+                  <option value="Enterprise">Enterprise</option>
+                  <option value="Others">Others</option>
                 </select>
               </div>
               <div>

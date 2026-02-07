@@ -4,6 +4,7 @@ import { Upload, Check, X, Eye, FileText, AlertCircle, Shield, Key, Loader2, Rec
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import Swal from 'sweetalert2';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -1730,8 +1731,6 @@ export default function FranchiseNew() {
     
     if (step === 4) {
       const requiredDocs = [
-        { name: 'proof_of_residency', label: 'Proof of Residency' }, 
-        { name: 'lto_or_cr', label: 'LTO OR Copy' },
         { name: 'lto_cr_copy', label: 'LTO CR Copy' },
         { name: 'drivers_license', label: 'Driver\'s License' }
       ];
@@ -1876,7 +1875,7 @@ export default function FranchiseNew() {
         return true;
       },
       4: () => {
-        const requiredDocs = [{ file: formData.proof_of_residency }, { file: formData.lto_or_cr }, { file: formData.lto_cr_copy }, { file: formData.drivers_license }];
+        const requiredDocs = [{ file: formData.lto_cr_copy }, { file: formData.drivers_license }];
         const hasBarangayClearance = formData.barangay_clearance_id || formData.barangay_clearance;
         
         if (formData.permit_subtype === 'MTOP') {
@@ -2100,6 +2099,7 @@ export default function FranchiseNew() {
       
       if (data.success) {
         showSuccessMessage(`Application submitted successfully! Application ID: ${data.data.application_id}`);
+        logPermitSubmission("Franchise Permit", data.data?.application_id || "", { permit_type: formData.permit_type || "New" });
         setTimeout(() => { navigate("/user/permittracker"); }, 3000);
       } else {
         showErrorMessage(`Error: ${data.message || 'Unknown error'}`);
@@ -3251,7 +3251,7 @@ export default function FranchiseNew() {
               {[
                 { 
                   name: 'proof_of_residency', 
-                  label: 'Proof of Residency *', 
+                  label: 'Proof of Residency (Optional)', 
                   description: 'Utility bill, lease agreement, or any document proving your residency' 
                 },
                 { 
@@ -3267,7 +3267,7 @@ export default function FranchiseNew() {
                 }] : []),
                 { 
                   name: 'lto_or_cr', 
-                  label: 'LTO OR Copy *', 
+                  label: 'LTO OR Copy (Optional)', 
                   description: 'Official Receipt from LTO' 
                 },
                 { 
@@ -4209,9 +4209,9 @@ export default function FranchiseNew() {
                   <p className="text-sm text-gray-600 mb-4">All documents marked with <span className="text-red-600 font-bold">*</span> are required</p>
                   <div className="space-y-3">
                     {[
-                      { name: 'proof_of_residency', label: 'Proof of Residency', file: formData.proof_of_residency, required: true },
+                      { name: 'proof_of_residency', label: 'Proof of Residency', file: formData.proof_of_residency, required: false },
                       { name: 'barangay_clearance', label: 'Barangay Clearance', file: formData.barangay_clearance, id: formData.barangay_clearance_id, required: true },
-                      { name: 'lto_or_cr', label: 'LTO OR/CR', file: formData.lto_or_cr, required: true },
+                      { name: 'lto_or_cr', label: 'LTO OR/CR', file: formData.lto_or_cr, required: false },
                       { name: 'lto_cr_copy', label: 'LTO CR Copy', file: formData.lto_cr_copy, required: true },
                       { name: 'drivers_license', label: 'Driver\'s License', file: formData.drivers_license, required: true },
                       { name: 'insurance_certificate', label: 'Insurance Certificate', file: formData.insurance_certificate, required: false },

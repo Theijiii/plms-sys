@@ -8,6 +8,7 @@ import {
   ClipboardCheck, FileSearch, CalendarDays, AlertTriangle, Loader2, Search
 } from "lucide-react";
 import Swal from 'sweetalert2';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 const COLORS = {
   primary: '#4A90E2',
@@ -498,6 +499,7 @@ export default function BusinessSpecialPermitApplication() {
 
       if (data.success) {
         showSuccessMessage(data.message || "Special permit application submitted successfully!");
+        logPermitSubmission("Business Permit", data.permit_id || "", { permit_type: "Special" });
         
         setTimeout(() => {
           navigate("/user/permittracker");

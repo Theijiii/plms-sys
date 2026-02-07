@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { ArrowRight, ArrowLeft, Droplets, Fence, Hammer, HardHat, Home, Radio, Signpost, Zap, Settings, CheckCircle, Loader2, Search, Shield } from "lucide-react";
+import { logPermitSubmission } from '../../../../services/ActivityLogger';
 
 const COLORS = { primary: '#4A90E2', secondary: '#000000', accent: '#FDA811', success: '#4CAF50', danger: '#E53935', background: '#FBFBFB', font: 'Montserrat, Arial, sans-serif' };
 const API_BASE = "/backend/building_permit/ancillary_permit.php";
@@ -117,7 +118,7 @@ export default function AncillaryPermits() {
       setProfessionalVerified(false);
       setProfessionalData(null);
     }
-    if (['prc_id', 'tct_or_tax_dec', 'barangay_clearance'].includes(name)) {
+    if (['tct_or_tax_dec', 'barangay_clearance'].includes(name)) {
       setFormData(prev => ({ ...prev, [name]: value.replace(/[^0-9]/g, '') }));
       return;
     }
@@ -350,6 +351,7 @@ export default function AncillaryPermits() {
       
       const result = await response.json();
       if (result.success) {
+        logPermitSubmission("Building Permit", result.data?.permit_id || "", { permit_type: selectedPermit?.title || "Ancillary" });
         Swal.fire({ icon: 'success', title: 'Application Submitted!',
           html: `<div style="font-family:${COLORS.font}"><p>Your <strong>${selectedPermit.title}</strong> application has been submitted.</p><p class="mt-2"><strong>Permit ID:</strong> ${result.data?.permit_id || 'N/A'}</p></div>`,
           confirmButtonColor: COLORS.success }).then(() => navigate('/user/building/type'));
@@ -476,7 +478,7 @@ export default function AncillaryPermits() {
         </label>
         <div className="flex gap-2">
           <input type="text" name="prc_id" value={formData.prc_id} onChange={handleChange}
-            placeholder="Enter PRC License Number" maxLength={7} className={`${inputCls} flex-1`} style={labelStyle} />
+            placeholder="Enter PRC License Number (e.g. PRC-987654)" className={`${inputCls} flex-1`} style={labelStyle} />
           <button onClick={verifyProfessional} disabled={verifyingProfessional}
             className="px-4 py-2 rounded-lg text-white font-semibold flex items-center gap-2 whitespace-nowrap"
             style={{ background: professionalVerified ? COLORS.success : COLORS.primary, fontFamily: COLORS.font }}>

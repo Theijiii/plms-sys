@@ -25,40 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
 require_once __DIR__ . '/db.php';
 
 
-// If db.php doesn't create $pdo automatically, create it
-if (!isset($pdo) || !$pdo) {
-    try {
-        // Check what your db.php actually contains
-        // If it has a getConnection() function, use that
-        if (function_exists('getConnection')) {
-            $pdo = getConnection();
-        } 
-        // If it defines connection variables, create PDO manually
-        else if (defined('DB_HOST') && defined('DB_NAME') && defined('DB_USER') && defined('DB_PASS')) {
-            $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        } else {
-            // Try to include db.php again with output buffering
-            ob_start();
-            include __DIR__ . '/db.php';
-            $output = ob_get_clean();
-            
-            // If still no $pdo, create a minimal connection
-            $pdo = new PDO("mysql:host=localhost;dbname=plms_db;charset=utf8mb4", "root", "");
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        }
-    } catch (PDOException $e) {
-        error_log("Database connection error: " . $e->getMessage());
-        echo json_encode([
-            "success" => false,
-            "error" => "Database connection failed",
-            "message" => $e->getMessage()
-        ]);
-        exit();
-    }
-}
-
 $ref = $_GET['reference_id'] ?? null;
 
 if (!$ref) {
@@ -68,16 +34,20 @@ if (!$ref) {
 }
 
 try {
-    $stmt = $pdo->prepare("
+    $conn = getDBConnection();
+    
+    $stmt = $conn->prepare("
       SELECT payment_status, receipt_number, paid_at, payment_id, amount
       FROM market_payments
       WHERE reference_id = ?
       ORDER BY paid_at DESC
       LIMIT 1
     ");
-    $stmt->execute([$ref]);
+    $stmt->bind_param("s", $ref);
+    $stmt->execute();
+    $result = $stmt->get_result();
     
-    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+    $data = $result->fetch_assoc();
     
     if ($data) {
         echo json_encode([
@@ -96,7 +66,10 @@ try {
         ]);
     }
     
-} catch (PDOException $e) {
+    $stmt->close();
+    $conn->close();
+    
+} catch (Exception $e) {
     error_log("Payment status error: " . $e->getMessage());
     echo json_encode([
         "success" => false,

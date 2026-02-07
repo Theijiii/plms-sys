@@ -128,7 +128,7 @@ function handleAncillaryPermitSubmission() {
         $signature_file_path = saveUploadedFile('signature_file', $subDir);
 
         // Insert into database
-        $stmt = $conn->prepare("INSERT INTO ancillary_permit_applications 
+        $stmt = $conn->prepare("INSERT INTO ancillary_permit 
             (permit_type, first_name, last_name, middle_initial, contact_number, email, 
              owner_address, property_address, building_permit_number, barangay_clearance, 
              tct_or_tax_dec, professional_name, professional_role, 
@@ -191,7 +191,7 @@ function fetchAncillaryPermits() {
             $types .= "s";
         }
 
-        $query = "SELECT * FROM ancillary_permit_applications WHERE {$where} ORDER BY date_submitted DESC";
+        $query = "SELECT * FROM ancillary_permit WHERE {$where} ORDER BY submitted_at DESC";
 
         if (!empty($params)) {
             $stmt = $conn->prepare($query);

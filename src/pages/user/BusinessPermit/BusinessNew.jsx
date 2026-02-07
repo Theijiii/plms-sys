@@ -4,6 +4,7 @@ import { Upload, Check, X, Eye, FileText, Search, AlertCircle, Loader2, Shield }
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import Swal from 'sweetalert2';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 // Configure PDF.js worker - use the bundled worker from node_modules
 if (typeof window !== 'undefined') {
@@ -1694,6 +1695,7 @@ export default function BusinessNew() {
       }
 
       showSuccessMessage(data.message || "Business permit application submitted successfully!");
+      logPermitSubmission("Business Permit", data.permit_id || "", { permit_type: permitType, business_name: formData.business_name });
       
       setTimeout(() => {
         navigate("/user/permittracker");

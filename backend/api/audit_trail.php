@@ -37,265 +37,139 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendError('Invalid request method. Only GET is allowed.', 405);
 }
 
+// Parse parameters
 $mode = isset($_GET['mode']) ? sanitize($_GET['mode']) : 'all';
 $userEmail = isset($_GET['email']) ? sanitize($_GET['email']) : '';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $limit = isset($_GET['limit']) ? min(100, max(10, intval($_GET['limit']))) : 20;
-$filterType = isset($_GET['type']) ? sanitize($_GET['type']) : 'all';
-$filterStatus = isset($_GET['status']) ? sanitize($_GET['status']) : 'all';
+$filterCategory = isset($_GET['category']) ? sanitize($_GET['category']) : 'all';
+$filterUser = isset($_GET['filter_user']) ? sanitize($_GET['filter_user']) : '';
 $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
 $dateFrom = isset($_GET['date_from']) ? sanitize($_GET['date_from']) : '';
 $dateTo = isset($_GET['date_to']) ? sanitize($_GET['date_to']) : '';
 
-// If mode is 'user', email is required
 if ($mode === 'user' && empty($userEmail)) {
     sendError('User email is required for user mode', 400);
 }
 
 $host = "localhost";
-
-$databases = [
-    'business' => [
-        'user' => 'eplms_paul',
-        'pass' => 'mypassword',
-        'name' => 'eplms_business_permit_db',
-        'table' => 'business_permit_applications',
-        'permitType' => 'Business Permit',
-        'id_col' => 'permit_id',
-        'prefix' => 'BUS',
-        'name_cols' => ['owner_first_name', 'owner_last_name'],
-        'business_col' => 'business_name',
-        'email_col' => 'email',
-        'status_col' => 'status',
-        'date_col' => 'date_submitted',
-        'alt_date_col' => 'application_date',
-        'type_col' => 'permit_type'
-    ],
-    'barangay' => [
-        'user' => 'eplms_karl',
-        'pass' => 'mypassword',
-        'name' => 'eplms_barangay_permit_db',
-        'table' => 'barangay_permit',
-        'permitType' => 'Barangay Permit',
-        'id_col' => 'permit_id',
-        'prefix' => 'BRG',
-        'name_cols' => ['first_name', 'last_name'],
-        'business_col' => null,
-        'email_col' => 'email',
-        'status_col' => 'status',
-        'date_col' => 'created_at',
-        'alt_date_col' => 'application_date',
-        'type_col' => 'purpose'
-    ],
-    'franchise' => [
-        'user' => 'eplms_kobe',
-        'pass' => 'mypassword',
-        'name' => 'eplms_franchise_applications',
-        'table' => 'franchise_permit_applications',
-        'permitType' => 'Franchise Permit',
-        'id_col' => 'application_id',
-        'prefix' => 'FRN',
-        'name_cols' => ['first_name', 'last_name'],
-        'business_col' => null,
-        'email_col' => 'email',
-        'status_col' => 'status',
-        'date_col' => 'date_submitted',
-        'alt_date_col' => 'created_at',
-        'type_col' => 'permit_type'
-    ]
-];
-
 $allActivities = [];
+$usersMap = [];
 
-foreach ($databases as $key => $db) {
-    // Apply permit type filter
-    if ($filterType !== 'all' && $filterType !== $key) {
-        continue;
-    }
-
-    $conn = new mysqli($host, $db['user'], $db['pass'], $db['name']);
-    if ($conn->connect_error) {
-        error_log("Audit Trail: Failed to connect to {$db['name']}: " . $conn->connect_error);
-        continue;
-    }
-    $conn->set_charset("utf8mb4");
-
-    // Build query
-    $conditions = [];
-    $params = [];
-    $types = "";
-
-    // User filter
-    if ($mode === 'user' && !empty($userEmail)) {
-        $conditions[] = "{$db['email_col']} = ?";
-        $params[] = $userEmail;
-        $types .= "s";
-    }
-
-    // Status filter
-    if ($filterStatus !== 'all') {
-        $conditions[] = "LOWER({$db['status_col']}) = LOWER(?)";
-        $params[] = $filterStatus;
-        $types .= "s";
-    }
-
-    // Search filter
-    if (!empty($search)) {
-        $searchConditions = [];
-        $searchConditions[] = "CONCAT({$db['name_cols'][0]}, ' ', {$db['name_cols'][1]}) LIKE ?";
-        $params[] = "%{$search}%";
-        $types .= "s";
-
-        if ($db['business_col']) {
-            $searchConditions[] = "{$db['business_col']} LIKE ?";
-            $params[] = "%{$search}%";
-            $types .= "s";
-        }
-
-        $searchConditions[] = "{$db['email_col']} LIKE ?";
-        $params[] = "%{$search}%";
-        $types .= "s";
-
-        $conditions[] = "(" . implode(" OR ", $searchConditions) . ")";
-    }
-
-    // Date filters
-    if (!empty($dateFrom)) {
-        $conditions[] = "COALESCE({$db['date_col']}, {$db['alt_date_col']}) >= ?";
-        $params[] = $dateFrom;
-        $types .= "s";
-    }
-    if (!empty($dateTo)) {
-        $conditions[] = "COALESCE({$db['date_col']}, {$db['alt_date_col']}) <= ?";
-        $params[] = $dateTo . " 23:59:59";
-        $types .= "s";
-    }
-
-    $where = count($conditions) > 0 ? "WHERE " . implode(" AND ", $conditions) : "";
-
-    $query = "SELECT * FROM {$db['table']} {$where} ORDER BY COALESCE({$db['date_col']}, {$db['alt_date_col']}) DESC";
-
-    $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        error_log("Audit Trail: Failed to prepare for {$db['name']}: " . $conn->error);
-        $conn->close();
-        continue;
-    }
-
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    while ($row = $result->fetch_assoc()) {
-        $permitId = $row[$db['id_col']] ?? 0;
-        $formattedId = $db['prefix'] . '-' . str_pad($permitId, 4, '0', STR_PAD_LEFT);
-        $applicantName = trim(($row[$db['name_cols'][0]] ?? '') . ' ' . ($row[$db['name_cols'][1]] ?? ''));
-        $businessName = $db['business_col'] ? ($row[$db['business_col']] ?? '') : '';
-        $status = $row[$db['status_col']] ?? 'Pending';
-        $date = $row[$db['date_col']] ?? $row[$db['alt_date_col']] ?? null;
-        $email = $row[$db['email_col']] ?? '';
-        $permitTypeLabel = $row[$db['type_col']] ?? 'New';
-
-        // Determine action based on status
-        $action = 'Submitted';
-        $actionDescription = "submitted a {$db['permitType']} application";
-        if (strtolower($status) === 'approved') {
-            $action = 'Approved';
-            $actionDescription = "{$db['permitType']} application was approved";
-        } elseif (strtolower($status) === 'rejected') {
-            $action = 'Rejected';
-            $actionDescription = "{$db['permitType']} application was rejected";
-        } elseif (strtolower($status) === 'for compliance' || strtolower($status) === 'compliance') {
-            $action = 'For Compliance';
-            $actionDescription = "{$db['permitType']} application requires compliance";
-        } elseif (strtolower($status) === 'under review' || strtolower($status) === 'under_review') {
-            $action = 'Under Review';
-            $actionDescription = "{$db['permitType']} application is under review";
-        } elseif (strtolower($status) === 'pending') {
-            $action = 'Submitted';
-            $actionDescription = "submitted a {$db['permitType']} application";
-        }
-
-        $allActivities[] = [
-            'id' => $formattedId,
-            'permit_id' => $permitId,
-            'permit_type' => $db['permitType'],
-            'permit_category' => $key,
-            'application_type' => $permitTypeLabel,
-            'applicant_name' => $applicantName,
-            'business_name' => $businessName,
-            'email' => $email,
-            'status' => ucfirst(strtolower($status)),
-            'action' => $action,
-            'action_description' => $actionDescription,
-            'date' => $date,
-            'remarks' => $row['remarks'] ?? '',
-        ];
-    }
-
-    $stmt->close();
-    $conn->close();
-}
-
-// Also fetch user login activities from user management DB
+// =====================================================
+// PRIMARY SOURCE: activity_logs table
+// =====================================================
 try {
-    $userConn = new mysqli($host, 'eplms_thea', 'mypassword', 'eplms_user_management');
-    if (!$userConn->connect_error) {
-        $userConn->set_charset("utf8mb4");
+    $conn = new mysqli($host, 'eplms_thea', 'mypassword', 'eplms_user_management');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
 
-        // Check if login_logs table exists
-        $tableCheck = $userConn->query("SHOW TABLES LIKE 'login_logs'");
+        $tableCheck = $conn->query("SHOW TABLES LIKE 'activity_logs'");
         if ($tableCheck && $tableCheck->num_rows > 0) {
-            $loginQuery = "SELECT * FROM login_logs";
-            $loginConditions = [];
-            $loginParams = [];
-            $loginTypes = "";
 
+            $conditions = [];
+            $params = [];
+            $types = "";
+
+            // User filter (for user mode)
             if ($mode === 'user' && !empty($userEmail)) {
-                $loginConditions[] = "email = ?";
-                $loginParams[] = $userEmail;
-                $loginTypes .= "s";
+                $conditions[] = "user_email = ?";
+                $params[] = $userEmail;
+                $types .= "s";
             }
 
-            if (count($loginConditions) > 0) {
-                $loginQuery .= " WHERE " . implode(" AND ", $loginConditions);
+            // Admin filtering by specific user
+            if ($mode === 'all' && !empty($filterUser)) {
+                $conditions[] = "user_email = ?";
+                $params[] = $filterUser;
+                $types .= "s";
             }
-            $loginQuery .= " ORDER BY login_time DESC LIMIT 100";
 
-            $loginStmt = $userConn->prepare($loginQuery);
-            if ($loginStmt) {
-                if (!empty($loginParams)) {
-                    $loginStmt->bind_param($loginTypes, ...$loginParams);
+            // Category filter
+            if ($filterCategory !== 'all') {
+                $conditions[] = "action_category = ?";
+                $params[] = $filterCategory;
+                $types .= "s";
+            }
+
+            // Search filter
+            if (!empty($search)) {
+                $conditions[] = "(user_name LIKE ? OR user_email LIKE ? OR description LIKE ? OR module LIKE ? OR action LIKE ?)";
+                $searchTerm = "%{$search}%";
+                $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+                $types .= "sssss";
+            }
+
+            // Date filters
+            if (!empty($dateFrom)) {
+                $conditions[] = "created_at >= ?";
+                $params[] = $dateFrom . " 00:00:00";
+                $types .= "s";
+            }
+            if (!empty($dateTo)) {
+                $conditions[] = "created_at <= ?";
+                $params[] = $dateTo . " 23:59:59";
+                $types .= "s";
+            }
+
+            $where = count($conditions) > 0 ? "WHERE " . implode(" AND ", $conditions) : "";
+            $query = "SELECT * FROM activity_logs {$where} ORDER BY created_at DESC";
+
+            $stmt = $conn->prepare($query);
+            if ($stmt) {
+                if (!empty($params)) {
+                    $stmt->bind_param($types, ...$params);
                 }
-                $loginStmt->execute();
-                $loginResult = $loginStmt->get_result();
-                while ($row = $loginResult->fetch_assoc()) {
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                while ($row = $result->fetch_assoc()) {
+                    $meta = null;
+                    if (!empty($row['metadata'])) {
+                        $meta = json_decode($row['metadata'], true);
+                    }
+
                     $allActivities[] = [
-                        'id' => 'LOGIN-' . ($row['id'] ?? 0),
-                        'permit_id' => null,
-                        'permit_type' => 'System',
-                        'permit_category' => 'system',
-                        'application_type' => 'Login',
-                        'applicant_name' => $row['name'] ?? $row['email'] ?? '',
-                        'business_name' => '',
-                        'email' => $row['email'] ?? '',
-                        'status' => $row['status'] ?? 'Success',
-                        'action' => 'Login',
-                        'action_description' => 'User logged into the system',
-                        'date' => $row['login_time'] ?? null,
-                        'remarks' => $row['ip_address'] ?? '',
+                        'id' => 'ACT-' . $row['id'],
+                        'date' => $row['created_at'],
+                        'user_name' => $row['user_name'] ?? '',
+                        'user_email' => $row['user_email'] ?? '',
+                        'user_role' => $row['user_role'] ?? 'user',
+                        'action' => $row['action'] ?? '',
+                        'action_category' => $row['action_category'] ?? 'system',
+                        'description' => $row['description'] ?? '',
+                        'module' => $row['module'] ?? '',
+                        'reference_id' => $row['reference_id'] ?? '',
+                        'ip_address' => $row['ip_address'] ?? '',
+                        'metadata' => $meta,
+                        'source' => 'activity_logs',
                     ];
+
+                    // Track users for admin panel
+                    $email = $row['user_email'] ?? '';
+                    if (!empty($email)) {
+                        if (!isset($usersMap[$email])) {
+                            $usersMap[$email] = [
+                                'email' => $email,
+                                'name' => $row['user_name'] ?? '',
+                                'role' => $row['user_role'] ?? 'user',
+                                'activity_count' => 0,
+                            ];
+                        }
+                        $usersMap[$email]['activity_count']++;
+                        if (empty($usersMap[$email]['name']) && !empty($row['user_name'])) {
+                            $usersMap[$email]['name'] = $row['user_name'];
+                        }
+                    }
                 }
-                $loginStmt->close();
+                $stmt->close();
             }
         }
 
-        // Check if registration data exists - fetch from users table
-        if ($mode === 'all' || $filterType === 'all' || $filterType === 'system') {
-            $regQuery = "SELECT id, first_name, last_name, email, created_at FROM users";
+        // =====================================================
+        // SECONDARY SOURCE: User registrations from users table
+        // =====================================================
+        if ($filterCategory === 'all' || $filterCategory === 'account') {
             $regConditions = [];
             $regParams = [];
             $regTypes = "";
@@ -305,9 +179,14 @@ try {
                 $regParams[] = $userEmail;
                 $regTypes .= "s";
             }
+            if ($mode === 'all' && !empty($filterUser)) {
+                $regConditions[] = "email = ?";
+                $regParams[] = $filterUser;
+                $regTypes .= "s";
+            }
             if (!empty($dateFrom)) {
                 $regConditions[] = "created_at >= ?";
-                $regParams[] = $dateFrom;
+                $regParams[] = $dateFrom . " 00:00:00";
                 $regTypes .= "s";
             }
             if (!empty($dateTo)) {
@@ -316,78 +195,330 @@ try {
                 $regTypes .= "s";
             }
 
-            if (count($regConditions) > 0) {
-                $regQuery .= " WHERE " . implode(" AND ", $regConditions);
-            }
-            $regQuery .= " ORDER BY created_at DESC";
+            $regWhere = count($regConditions) > 0 ? "WHERE " . implode(" AND ", $regConditions) : "";
+            $regQuery = "SELECT id, first_name, last_name, email, role, created_at FROM users {$regWhere} ORDER BY created_at DESC";
 
-            $regStmt = $userConn->prepare($regQuery);
+            $regStmt = $conn->prepare($regQuery);
             if ($regStmt) {
                 if (!empty($regParams)) {
                     $regStmt->bind_param($regTypes, ...$regParams);
                 }
                 $regStmt->execute();
                 $regResult = $regStmt->get_result();
+
                 while ($row = $regResult->fetch_assoc()) {
+                    $regEmail = $row['email'] ?? '';
+                    $regName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+
+                    // Avoid duplicates: skip if activity_logs already has a Registration entry for this user
+                    $isDuplicate = false;
+                    foreach ($allActivities as $existing) {
+                        if ($existing['user_email'] === $regEmail && $existing['action'] === 'Registration') {
+                            $isDuplicate = true;
+                            break;
+                        }
+                    }
+                    if ($isDuplicate) continue;
+
                     $allActivities[] = [
                         'id' => 'REG-' . ($row['id'] ?? 0),
-                        'permit_id' => null,
-                        'permit_type' => 'System',
-                        'permit_category' => 'system',
-                        'application_type' => 'Registration',
-                        'applicant_name' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
-                        'business_name' => '',
-                        'email' => $row['email'] ?? '',
-                        'status' => 'Completed',
-                        'action' => 'Registration',
-                        'action_description' => 'User registered an account',
                         'date' => $row['created_at'] ?? null,
-                        'remarks' => '',
+                        'user_name' => $regName,
+                        'user_email' => $regEmail,
+                        'user_role' => $row['role'] ?? 'user',
+                        'action' => 'Registration',
+                        'action_category' => 'account',
+                        'description' => "{$regName} registered a new account",
+                        'module' => 'Authentication',
+                        'reference_id' => '',
+                        'ip_address' => '',
+                        'metadata' => null,
+                        'source' => 'users_table',
                     ];
+
+                    if (!empty($regEmail) && !isset($usersMap[$regEmail])) {
+                        $usersMap[$regEmail] = [
+                            'email' => $regEmail,
+                            'name' => $regName,
+                            'role' => $row['role'] ?? 'user',
+                            'activity_count' => 0,
+                        ];
+                    }
+                    if (!empty($regEmail)) {
+                        $usersMap[$regEmail]['activity_count']++;
+                    }
                 }
                 $regStmt->close();
             }
         }
 
-        $userConn->close();
+        $conn->close();
     }
 } catch (Exception $e) {
     error_log("Audit Trail: User management DB error: " . $e->getMessage());
 }
 
+// =====================================================
+// SECONDARY SOURCE: Permit applications from permit DBs
+// =====================================================
+if ($filterCategory === 'all' || $filterCategory === 'permit') {
+
+    $databases = [
+        'business' => [
+            'user' => 'eplms_paul',
+            'pass' => 'mypassword',
+            'name' => 'eplms_business_permit_db',
+            'table' => 'business_permit_applications',
+            'permitType' => 'Business Permit',
+            'id_col' => 'permit_id',
+            'prefix' => 'BUS',
+            'name_cols' => ['owner_first_name', 'owner_last_name'],
+            'business_col' => 'business_name',
+            'email_col' => 'email',
+            'status_col' => 'status',
+            'date_col' => 'date_submitted',
+            'alt_date_col' => 'application_date',
+            'type_col' => 'permit_type'
+        ],
+        'barangay' => [
+            'user' => 'eplms_karl',
+            'pass' => 'mypassword',
+            'name' => 'eplms_barangay_permit_db',
+            'table' => 'barangay_permit',
+            'permitType' => 'Barangay Permit',
+            'id_col' => 'permit_id',
+            'prefix' => 'BRG',
+            'name_cols' => ['first_name', 'last_name'],
+            'business_col' => null,
+            'email_col' => 'email',
+            'status_col' => 'status',
+            'date_col' => 'created_at',
+            'alt_date_col' => 'application_date',
+            'type_col' => 'purpose'
+        ],
+        'franchise' => [
+            'user' => 'eplms_kobe',
+            'pass' => 'mypassword',
+            'name' => 'eplms_franchise_applications',
+            'table' => 'franchise_permit_applications',
+            'permitType' => 'Franchise Permit',
+            'id_col' => 'application_id',
+            'prefix' => 'FRN',
+            'name_cols' => ['first_name', 'last_name'],
+            'business_col' => null,
+            'email_col' => 'email',
+            'status_col' => 'status',
+            'date_col' => 'date_submitted',
+            'alt_date_col' => 'created_at',
+            'type_col' => 'permit_type'
+        ]
+    ];
+
+    foreach ($databases as $key => $db) {
+        $pConn = new mysqli($host, $db['user'], $db['pass'], $db['name']);
+        if ($pConn->connect_error) {
+            error_log("Audit Trail: Failed to connect to {$db['name']}: " . $pConn->connect_error);
+            continue;
+        }
+        $pConn->set_charset("utf8mb4");
+
+        $conditions = [];
+        $params = [];
+        $types = "";
+
+        if ($mode === 'user' && !empty($userEmail)) {
+            $conditions[] = "{$db['email_col']} = ?";
+            $params[] = $userEmail;
+            $types .= "s";
+        }
+        if ($mode === 'all' && !empty($filterUser)) {
+            $conditions[] = "{$db['email_col']} = ?";
+            $params[] = $filterUser;
+            $types .= "s";
+        }
+        if (!empty($search)) {
+            $searchConds = [];
+            $searchConds[] = "CONCAT({$db['name_cols'][0]}, ' ', {$db['name_cols'][1]}) LIKE ?";
+            $params[] = "%{$search}%";
+            $types .= "s";
+            if ($db['business_col']) {
+                $searchConds[] = "{$db['business_col']} LIKE ?";
+                $params[] = "%{$search}%";
+                $types .= "s";
+            }
+            $searchConds[] = "{$db['email_col']} LIKE ?";
+            $params[] = "%{$search}%";
+            $types .= "s";
+            $conditions[] = "(" . implode(" OR ", $searchConds) . ")";
+        }
+        if (!empty($dateFrom)) {
+            $conditions[] = "COALESCE({$db['date_col']}, {$db['alt_date_col']}) >= ?";
+            $params[] = $dateFrom;
+            $types .= "s";
+        }
+        if (!empty($dateTo)) {
+            $conditions[] = "COALESCE({$db['date_col']}, {$db['alt_date_col']}) <= ?";
+            $params[] = $dateTo . " 23:59:59";
+            $types .= "s";
+        }
+
+        $where = count($conditions) > 0 ? "WHERE " . implode(" AND ", $conditions) : "";
+        $query = "SELECT * FROM {$db['table']} {$where} ORDER BY COALESCE({$db['date_col']}, {$db['alt_date_col']}) DESC";
+
+        $stmt = $pConn->prepare($query);
+        if (!$stmt) {
+            error_log("Audit Trail: Failed to prepare for {$db['name']}: " . $pConn->error);
+            $pConn->close();
+            continue;
+        }
+
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+            $permitId = $row[$db['id_col']] ?? 0;
+            $formattedId = $db['prefix'] . '-' . str_pad($permitId, 4, '0', STR_PAD_LEFT);
+            $applicantName = trim(($row[$db['name_cols'][0]] ?? '') . ' ' . ($row[$db['name_cols'][1]] ?? ''));
+            $businessName = $db['business_col'] ? ($row[$db['business_col']] ?? '') : '';
+            $status = $row[$db['status_col']] ?? 'Pending';
+            $date = $row[$db['date_col']] ?? $row[$db['alt_date_col']] ?? null;
+            $email = $row[$db['email_col']] ?? '';
+            $permitTypeLabel = $row[$db['type_col']] ?? 'New';
+
+            // Determine action based on status
+            $action = 'Permit Submission';
+            $actionDesc = "Submitted a {$db['permitType']} application";
+            $statusLower = strtolower($status);
+            if ($statusLower === 'approved') {
+                $action = 'Permit Approved';
+                $actionDesc = "{$db['permitType']} application was approved";
+            } elseif ($statusLower === 'rejected') {
+                $action = 'Permit Rejected';
+                $actionDesc = "{$db['permitType']} application was rejected";
+            } elseif ($statusLower === 'for compliance' || $statusLower === 'compliance') {
+                $action = 'For Compliance';
+                $actionDesc = "{$db['permitType']} application requires compliance";
+            } elseif ($statusLower === 'under review' || $statusLower === 'under_review') {
+                $action = 'Under Review';
+                $actionDesc = "{$db['permitType']} application is under review";
+            }
+
+            // Check for duplicate (activity_logs already captured this submission)
+            $isDuplicate = false;
+            foreach ($allActivities as $existing) {
+                if ($existing['user_email'] === $email
+                    && $existing['action'] === 'Permit Submission'
+                    && $existing['module'] === $db['permitType']
+                    && !empty($existing['reference_id'])
+                    && $existing['reference_id'] == $permitId) {
+                    $isDuplicate = true;
+                    break;
+                }
+            }
+            if ($isDuplicate) continue;
+
+            $allActivities[] = [
+                'id' => $formattedId,
+                'date' => $date,
+                'user_name' => $applicantName,
+                'user_email' => $email,
+                'user_role' => 'user',
+                'action' => $action,
+                'action_category' => 'permit',
+                'description' => $actionDesc,
+                'module' => $db['permitType'],
+                'reference_id' => $formattedId,
+                'ip_address' => '',
+                'metadata' => $businessName ? ['business_name' => $businessName, 'permit_type' => $permitTypeLabel, 'status' => $status] : ['permit_type' => $permitTypeLabel, 'status' => $status],
+                'source' => 'permit_db',
+            ];
+
+            if (!empty($email)) {
+                if (!isset($usersMap[$email])) {
+                    $usersMap[$email] = [
+                        'email' => $email,
+                        'name' => $applicantName,
+                        'role' => 'user',
+                        'activity_count' => 0,
+                    ];
+                }
+                $usersMap[$email]['activity_count']++;
+            }
+        }
+
+        $stmt->close();
+        $pConn->close();
+    }
+}
+
+// =====================================================
 // Sort all activities by date (most recent first)
+// =====================================================
 usort($allActivities, function($a, $b) {
     $dateA = strtotime($a['date'] ?? '1970-01-01');
     $dateB = strtotime($b['date'] ?? '1970-01-01');
     return $dateB - $dateA;
 });
 
-// Pagination
+// =====================================================
+// Compute stats BEFORE pagination
+// =====================================================
 $totalActivities = count($allActivities);
-$totalPages = ceil($totalActivities / $limit);
+
+// Count by category
+$byCategory = [];
+$byAction = [];
+$uniqueEmails = [];
+
+foreach ($allActivities as $act) {
+    $cat = $act['action_category'] ?? 'system';
+    $byCategory[$cat] = ($byCategory[$cat] ?? 0) + 1;
+
+    $actionName = $act['action'] ?? 'Unknown';
+    $byAction[$actionName] = ($byAction[$actionName] ?? 0) + 1;
+
+    $em = $act['user_email'] ?? '';
+    if (!empty($em)) {
+        $uniqueEmails[$em] = true;
+    }
+}
+
+$stats = [
+    'total' => $totalActivities,
+    'unique_users' => count($uniqueEmails),
+    'by_category' => $byCategory,
+    'by_action' => $byAction,
+];
+
+// =====================================================
+// Pagination
+// =====================================================
+$totalPages = max(1, ceil($totalActivities / $limit));
 $offset = ($page - 1) * $limit;
 $paginatedActivities = array_slice($allActivities, $offset, $limit);
 
-// Statistics
-$stats = [
-    'total' => $totalActivities,
-    'submitted' => count(array_filter($allActivities, fn($a) => $a['action'] === 'Submitted')),
-    'approved' => count(array_filter($allActivities, fn($a) => $a['action'] === 'Approved')),
-    'rejected' => count(array_filter($allActivities, fn($a) => $a['action'] === 'Rejected')),
-    'compliance' => count(array_filter($allActivities, fn($a) => $a['action'] === 'For Compliance')),
-    'by_type' => [
-        'business' => count(array_filter($allActivities, fn($a) => $a['permit_category'] === 'business')),
-        'barangay' => count(array_filter($allActivities, fn($a) => $a['permit_category'] === 'barangay')),
-        'franchise' => count(array_filter($allActivities, fn($a) => $a['permit_category'] === 'franchise')),
-        'system' => count(array_filter($allActivities, fn($a) => $a['permit_category'] === 'system')),
-    ]
-];
+// Remove internal 'source' field from output
+$paginatedActivities = array_map(function($a) {
+    unset($a['source']);
+    return $a;
+}, $paginatedActivities);
+
+// Build users list sorted by activity count (for admin panel)
+$usersList = array_values($usersMap);
+usort($usersList, function($a, $b) {
+    return $b['activity_count'] - $a['activity_count'];
+});
 
 echo json_encode([
     'success' => true,
     'message' => 'Audit trail fetched successfully',
     'activities' => $paginatedActivities,
     'stats' => $stats,
+    'users' => $usersList,
     'pagination' => [
         'current_page' => $page,
         'total_pages' => $totalPages,

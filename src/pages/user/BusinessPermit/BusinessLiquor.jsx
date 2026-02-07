@@ -5,11 +5,12 @@ import {
   CheckCircle, AlertCircle, FileCheck, Upload, Check, X, Eye, 
   XCircle, Info, FileSignature, Calendar, Clock, Wine, Shield, 
   Store, CreditCard, Home, Package, Truck, Users, RefreshCw, Edit,
-  ClipboardCheck, FileSearch, CalendarDays, AlertTriangle, Loader2
+  ClipboardCheck, FileSearch, CalendarDays, AlertTriangle, Loader2, Search
 } from "lucide-react";
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import Swal from 'sweetalert2';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {
@@ -33,11 +34,6 @@ const COLORS = {
 export default function LiquorPermitApplication() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-  const [modalTitle, setModalTitle] = useState('');
   const [agreeDeclaration, setAgreeDeclaration] = useState(false);
   const [showPreview, setShowPreview] = useState({});
   const [errors, setErrors] = useState({});
@@ -70,6 +66,7 @@ export default function LiquorPermitApplication() {
   const [barangayVerificationResult, setBarangayVerificationResult] = useState(null);
   const [showBarangayModal, setShowBarangayModal] = useState(false);
   const [validatedBarangayIds, setValidatedBarangayIds] = useState({});
+  const [barangayClearanceMethod, setBarangayClearanceMethod] = useState('upload');
 
   // Get current date for submission
   const getCurrentDate = () => {
@@ -1113,15 +1110,39 @@ export default function LiquorPermitApplication() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+    if (currentStep === steps.length) {
+      // On last step (Review), show confirm modal via SweetAlert2
+      Swal.fire({
+        title: 'Submit Application',
+        html: `
+          <div style="text-align: left; margin: 20px 0;">
+            <p style="margin-bottom: 15px;">Are you sure you want to submit your liquor permit application?</p>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #4A90E2;">
+              <p style="font-size: 14px;"><strong>Business:</strong> ${formData.business_name}</p>
+              <p style="font-size: 14px;"><strong>Owner:</strong> ${formData.owner_first_name} ${formData.owner_last_name}</p>
+              <p style="font-size: 14px;"><strong>Type:</strong> ${applicationTypes.find(t => t.id === formData.application_type)?.name}</p>
+              <p style="font-size: 14px;"><strong>Date:</strong> ${formData.date_submitted}</p>
+            </div>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: COLORS.success,
+        cancelButtonColor: COLORS.danger,
+        confirmButtonText: 'Submit Application',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          handleSubmit();
+        }
+      });
+      return;
+    }
     if (currentStep < steps.length) {
       const ok = validateStep(currentStep);
       if (ok) {
-        if (currentStep === steps.length - 1) {
-          setShowConfirmModal(true);
-        } else {
-          setCurrentStep(currentStep + 1);
-          setErrors({});
-        }
+        setCurrentStep(currentStep + 1);
+        setErrors({});
       }
     }
   };
@@ -1159,7 +1180,6 @@ export default function LiquorPermitApplication() {
     for (let i = 1; i <= steps.length; i++) {
       if (!validateStep(i)) {
         setCurrentStep(i);
-        setShowConfirmModal(false);
         return;
       }
     }
@@ -1252,52 +1272,9 @@ export default function LiquorPermitApplication() {
       }
 
       if (data.success) {
-        setShowConfirmModal(false);
         showSuccessMessage(data.message || "Liquor permit application submitted successfully!");
+        logPermitSubmission("Business Permit", data.permit_id || "", { permit_type: "Liquor" });
         
-        // Reset form after successful submission
-        setTimeout(() => {
-          setFormData({
-            application_type: 'NEW',
-            existing_permit_number: '',
-            renewal_permit_number: '',
-            previous_permit_validity: '',
-            renewal_reason: '',
-            amendment_type: 'CHANGE_OWNER',
-            amendment_details: '',
-            amendment_reason: '',
-            business_name: '',
-            business_address: '',
-            business_email: '',
-            business_phone: '',
-            business_type: '',
-            business_nature: '',
-            owner_first_name: '',
-            owner_last_name: '',
-            owner_middle_name: '',
-            owner_address: '',
-            id_type: 'GOVERNMENT_ID',
-            id_number: '',
-            date_of_birth: '',
-            citizenship: 'FILIPINO',
-            barangay_clearance_id: '',
-            barangay_clearance_liquor: null,
-            barangay_clearance_id_copy: null,
-            owner_valid_id: null,
-            renewal_permit_copy: null,
-            previous_permit_copy: null,
-            applicant_signature: '',
-            declaration_agreed: false,
-            applicant_id: applicantId,
-            date_submitted: getCurrentDate(),
-            time_submitted: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          });
-          setPermitInfo(null);
-          setExistingLiquorPermitInfo(null);
-          setAgreeDeclaration(false);
-          setErrors({});
-        }, 2000);
-
         setTimeout(() => {
           navigate("/user/permittracker");
         }, 3000);
@@ -2424,12 +2401,12 @@ export default function LiquorPermitApplication() {
               {/* Application Type Specific Documents */}
               {renderApplicationTypeSpecificDocuments()}
 
-              {/* Barangay Clearance Section - MODIFIED: Only one required */}
-              <div className="border border-gray-300 rounded-lg bg-blue-50">
-                <div className="p-4">
-                  <div className="flex items-center mb-3">
+              {/* Barangay Clearance Section - Upload or ID */}
+              <div className="border border-gray-300 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between p-3 bg-blue-50">
+                  <div className="flex items-center">
                     <div className="mr-3">
-                      {formData.barangay_clearance_id.trim() || formData.barangay_clearance_id_copy ? (
+                      {(formData.barangay_clearance_id.trim() && validatedBarangayIds[formData.barangay_clearance_id]) || formData.barangay_clearance_id_copy ? (
                         <Check className="w-5 h-5 text-green-600" />
                       ) : (
                         <X className="w-5 h-5 text-red-600" />
@@ -2437,156 +2414,178 @@ export default function LiquorPermitApplication() {
                     </div>
                     <div>
                       <span className="font-medium">Barangay Clearance for Liquor: <span className="text-red-500">*</span></span>
-                      <p className="text-xs text-red-500 font-semibold">* Provide EITHER ID number OR Document (one is enough)</p>
+                      <p className="text-sm text-gray-600">
+                        {formData.barangay_clearance_id_copy ? formData.barangay_clearance_id_copy.name :
+                         formData.barangay_clearance_id ? 'ID Provided' : 'File or ID required'}
+                      </p>
+                      <p className="text-xs text-red-500 font-semibold">
+                        * Either file upload OR ID number must be provided
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Barangay Clearance ID Number
-                      </label>
-                      <div className="flex gap-2 mb-2">
+                </div>
+                
+                {/* Radio buttons to choose method */}
+                <div className="p-3 bg-gray-50 border-b">
+                  <label className="block text-sm font-medium mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                    Choose verification method:
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="barangay_method"
+                        value="upload"
+                        checked={barangayClearanceMethod === 'upload'}
+                        onChange={(e) => setBarangayClearanceMethod(e.target.value)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                        Upload Document
+                      </span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="barangay_method"
+                        value="id"
+                        checked={barangayClearanceMethod === 'id'}
+                        onChange={(e) => setBarangayClearanceMethod(e.target.value)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                        Enter ID Number (API Verification)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* File Upload Section */}
+                {barangayClearanceMethod === 'upload' && (
+                  <div className="p-3 bg-white">
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer">
                         <input
-                          type="text"
-                          name="barangay_clearance_id"
-                          value={formData.barangay_clearance_id}
+                          type="file"
+                          name="barangay_clearance_id_copy"
                           onChange={handleChange}
-                          placeholder="Enter Barangay Clearance ID (Optional)"
-                          className="flex-1 p-3 border border-black rounded-lg"
+                          accept=".pdf,.jpg,.png,.jpeg"
+                          className="hidden"
                         />
+                        <div className={`flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border ${
+                          !formData.barangay_clearance_id_copy ? 'border-gray-300' : 'border-green-200 bg-green-50'
+                        }`} style={{ color: COLORS.secondary }}>
+                          <Upload className="w-4 h-4" />
+                          {formData.barangay_clearance_id_copy ? 'Change File' : 'Upload Document'}
+                        </div>
+                      </label>
+                      {formData.barangay_clearance_id_copy && (
+                        <>
+                          <span className="text-sm text-gray-600">{formData.barangay_clearance_id_copy.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => previewFile(formData.barangay_clearance_id_copy)}
+                            className="flex items-center gap-1 px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-300 border border-gray-300"
+                            style={{ color: COLORS.secondary }}
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => verifyDocument('barangay_clearance_id_copy', formData.barangay_clearance_id_copy)}
+                            disabled={documentVerification.barangay_clearance_id_copy?.isVerifying}
+                            className={`flex items-center gap-1 px-3 py-2 text-sm rounded border ${
+                              documentVerification.barangay_clearance_id_copy?.isVerifying
+                                ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                : documentVerification.barangay_clearance_id_copy?.isVerified
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                            }`}>
+                            {documentVerification.barangay_clearance_id_copy?.isVerifying ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : documentVerification.barangay_clearance_id_copy?.isVerified ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Shield className="w-4 h-4" />
+                            )}
+                            {documentVerification.barangay_clearance_id_copy?.isVerifying
+                              ? 'Verifying...'
+                              : documentVerification.barangay_clearance_id_copy?.isVerified
+                              ? 'Verified'
+                              : 'Verify'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    {documentVerification.barangay_clearance_id_copy?.isVerified && (
+                      <div className="text-xs text-green-600 flex items-center mt-2">
+                        <Check className="w-3 h-3 mr-1" /> Document verified successfully
+                      </div>
+                    )}
+                    {documentVerification.barangay_clearance_id_copy?.isVerified === false && (
+                      <div className="text-xs text-red-600 flex items-center mt-2">
+                        <X className="w-3 h-3 mr-1" /> Verification failed - please check document
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ID Input Section */}
+                {barangayClearanceMethod === 'id' && (
+                  <div className="p-3 bg-white">
+                    <label className="block text-sm font-medium mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
+                      Barangay Clearance ID/Applicant ID:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name="barangay_clearance_id"
+                        value={formData.barangay_clearance_id}
+                        onChange={handleChange}
+                        placeholder="Enter Barangay Clearance Applicant ID"
+                        className="flex-1 p-2 border border-gray-300 rounded"
+                        style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
+                      />
+                      {formData.barangay_clearance_id && (
                         <button
                           type="button"
                           onClick={verifyBarangayClearanceId}
-                          disabled={verifyingBarangayId || !formData.barangay_clearance_id.trim()}
-                          className={`px-4 py-3 rounded-lg font-medium text-white ${
-                            verifyingBarangayId || !formData.barangay_clearance_id.trim()
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : validatedBarangayIds[formData.barangay_clearance_id]
-                              ? 'bg-green-600 hover:bg-green-700'
-                              : 'bg-blue-600 hover:bg-blue-700'
-                          }`}>
+                          disabled={verifyingBarangayId}
+                          className={`flex items-center gap-1 px-4 py-2 text-sm rounded transition-colors duration-300 border ${
+                            validatedBarangayIds[formData.barangay_clearance_id]
+                              ? 'bg-green-100 border-green-500 text-green-700' 
+                              : 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100'
+                          }`}
+                        >
                           {verifyingBarangayId ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
                           ) : validatedBarangayIds[formData.barangay_clearance_id] ? (
-                            'Verified'
+                            <><Check className="w-4 h-4" /> Verified</>
                           ) : (
-                            'Verify'
+                            <><Search className="w-4 h-4" /> Verify with API</>
                           )}
                         </button>
-                      </div>
-                      {validatedBarangayIds[formData.barangay_clearance_id] && (
-                        <div className="text-xs text-green-600 flex items-center mb-1">
-                          <Check className="w-3 h-3 mr-1" /> ID verified successfully
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Provide ID if you have the clearance number
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Clearance Document (Alternative)
-                      </label>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          {formData.barangay_clearance_id_copy ? (
-                            <>
-                              <Check className="w-4 h-4 text-green-600 mr-2" />
-                              <span className="text-sm truncate max-w-[150px]">
-                                {formData.barangay_clearance_id_copy.name}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-sm text-gray-500">Optional - upload document</span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <label className="cursor-pointer">
-                            <input
-                              type="file"
-                              name="barangay_clearance_id_copy"
-                              onChange={handleChange}
-                              accept=".pdf,.jpg,.png,.jpeg"
-                              className="hidden"
-                            />
-                            <div className={`flex items-center gap-1 px-3 py-2 text-sm rounded border ${
-                              !formData.barangay_clearance_id_copy 
-                                ? 'border-gray-300 bg-white text-gray-700' 
-                                : 'border-green-200 bg-green-50 text-green-700'
-                            }`}>
-                              <Upload className="w-4 h-4" />
-                              {formData.barangay_clearance_id_copy ? 'Change' : 'Upload'}
-                            </div>
-                          </label>
-                          {formData.barangay_clearance_id_copy && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => previewFile(formData.barangay_clearance_id_copy)}
-                                className="flex items-center gap-1 px-3 py-2 text-sm rounded border border-gray-300 hover:bg-gray-50"
-                              >
-                                <Eye className="w-4 h-4" />
-                                View
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => verifyDocument('barangay_clearance_id_copy', formData.barangay_clearance_id_copy)}
-                                disabled={documentVerification.barangay_clearance_id_copy?.isVerifying}
-                                className={`flex items-center gap-1 px-3 py-2 text-sm rounded border ${
-                                  documentVerification.barangay_clearance_id_copy?.isVerifying
-                                    ? 'border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed'
-                                    : documentVerification.barangay_clearance_id_copy?.isVerified
-                                    ? 'border-green-500 bg-green-50 text-green-700'
-                                    : 'border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                                }`}>
-                                {documentVerification.barangay_clearance_id_copy?.isVerifying ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : documentVerification.barangay_clearance_id_copy?.isVerified ? (
-                                  <Check className="w-4 h-4" />
-                                ) : (
-                                  <Shield className="w-4 h-4" />
-                                )}
-                                {documentVerification.barangay_clearance_id_copy?.isVerifying
-                                  ? 'Verifying...'
-                                  : documentVerification.barangay_clearance_id_copy?.isVerified
-                                  ? 'Verified'
-                                  : 'Verify'}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      {documentVerification.barangay_clearance_id_copy?.isVerified && (
-                        <div className="text-xs text-green-600 flex items-center">
-                          <Check className="w-3 h-3 mr-1" /> Document verified successfully
-                        </div>
-                      )}
-                      {documentVerification.barangay_clearance_id_copy?.isVerified === false && (
-                        <div className="text-xs text-red-600 flex items-center">
-                          <X className="w-3 h-3 mr-1" /> Verification failed - please check document
-                        </div>
                       )}
                     </div>
                   </div>
-                  
-                  {errors.barangay_clearance && (
-                    <p className="text-red-600 text-sm mt-2">{errors.barangay_clearance}</p>
-                  )}
-                  
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-sm text-yellow-700 font-medium">
-                      <Info className="inline w-4 h-4 mr-1" />
-                      Note: You only need to provide ONE of the following:
-                    </p>
-                    <ul className="text-xs text-yellow-700 mt-1 ml-5 list-disc">
-                      <li>Barangay Clearance ID Number (if you know it)</li>
-                      <li>OR Upload a copy of the Barangay Clearance document</li>
-                    </ul>
-                  </div>
+                )}
+
+                <div className="p-3 bg-gray-50">
+                  <p className="text-xs">
+                    <span className={`font-medium ${
+                      ((formData.barangay_clearance_id.trim() && validatedBarangayIds[formData.barangay_clearance_id]) || formData.barangay_clearance_id_copy) ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {((formData.barangay_clearance_id.trim() && validatedBarangayIds[formData.barangay_clearance_id]) || formData.barangay_clearance_id_copy)
+                        ? '✓ Requirement satisfied' 
+                        : (formData.barangay_clearance_id && !validatedBarangayIds[formData.barangay_clearance_id])
+                          ? '⚠ Please verify the ID to proceed'
+                          : '⚠ Please provide either the document or ID number'}
+                    </span>
+                  </p>
                 </div>
               </div>
+              {errors.barangay_clearance && <p className="text-red-600 text-sm mt-1">{errors.barangay_clearance}</p>}
 
               {/* Owner Valid ID Section */}
               <div className="relative">
@@ -2701,7 +2700,7 @@ export default function LiquorPermitApplication() {
             </div>
             <div>
               <h1 className="text-2xl md:text-4xl font-bold" style={{ color: COLORS.primary }}>
-                LIQUOR PERMIT APPLICATION
+                Liquor Permit Application
               </h1>
               <p className="mt-1 text-lg font-semibold text-blue-700">
                 Caloocan City Business Permit and Licensing Office
@@ -2806,12 +2805,11 @@ export default function LiquorPermitApplication() {
                 !isStepValid(currentStep) ? 'cursor-not-allowed' : 'transition-colors duration-300'
               }`}
             >
-              {currentStep === steps.length - 1 ? 'Review & Submit' : 'Next'}
+              {currentStep === steps.length - 1 ? 'Review Application' : 'Next'}
             </button>
           ) : (
             <button
-              type="button"
-              onClick={() => setShowConfirmModal(true)}
+              type="submit"
               onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
               onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
               style={{ background: COLORS.success }}
@@ -2825,7 +2823,7 @@ export default function LiquorPermitApplication() {
 
       {/* File Preview Modal */}
       {showPreview.url && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div 
             className="rounded-lg shadow-lg w-full max-w-4xl border border-gray-200 overflow-hidden"
             style={{ 
@@ -2897,201 +2895,17 @@ export default function LiquorPermitApplication() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div 
-            className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.95)',
-              fontFamily: COLORS.font,
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                <FileSignature className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-            
-            <h2 className="text-xl font-bold text-center mb-4" style={{ color: COLORS.primary }}>Submit Liquor Permit Application?</h2>
-            
-            <div className="mb-6">
-              <p className="text-sm text-center mb-3" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                Are you sure you want to submit your liquor permit application? Please ensure all information is correct before submitting.
-              </p>
-              
-              <div className="p-4 bg-gray-50 rounded-lg border mt-4">
-                <p className="text-sm font-semibold mb-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>Application Summary:</p>
-                <ul className="text-xs space-y-1" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                  <li>• Business: {formData.business_name}</li>
-                  <li>• Owner: {formData.owner_first_name} {formData.owner_last_name}</li>
-                  <li>• Application Type: {applicationTypes.find(t => t.id === formData.application_type)?.name}</li>
-                  <li>• Owner Age: {calculateAge(formData.date_of_birth)} years old</li>
-                  {!ageValid && (
-                    <li className="text-red-600 font-semibold">• ⚠️ Age requirement not met (must be 18+)</li>
-                  )}
-                  <li>• Barangay Clearance: {formData.barangay_clearance_id ? `ID: ${formData.barangay_clearance_id}` : formData.barangay_clearance_id_copy ? 'Document uploaded' : 'Not provided'}</li>
-                  {formData.application_type === 'RENEWAL' && (
-                    <li>• Renewal Reason: {formData.renewal_reason.substring(0, 50)}...</li>
-                  )}
-                  {formData.application_type === 'AMENDMENT' && (
-                    <>
-                      <li>• Amendment Type: {amendmentTypes.find(t => t.id === formData.amendment_type)?.name}</li>
-                      <li>• Amendment Details: {formData.amendment_details.substring(0, 50)}...</li>
-                    </>
-                  )}
-                  <li>• Submission Date: {formData.date_submitted}</li>
-                  <li>• Declaration Status: <span className="text-green-600 font-semibold">Agreed and Signed</span></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isSubmitting}
-                style={{ background: COLORS.danger }}
-                onMouseEnter={e => {
-                  if (!isSubmitting) e.currentTarget.style.background = COLORS.accent;
-                }}
-                onMouseLeave={e => {
-                  if (!isSubmitting) e.currentTarget.style.background = COLORS.danger;
-                }}
-                className={`px-6 py-2 rounded-lg font-semibold text-white ${
-                  isSubmitting ? 'cursor-not-allowed' : 'transition-colors duration-300'
-                }`}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !ageValid}
-                style={{ background: (isSubmitting || !ageValid) ? '#9CA3AF' : COLORS.success }}
-                onMouseEnter={e => {
-                  if (!isSubmitting && ageValid) e.currentTarget.style.background = COLORS.accent;
-                }}
-                onMouseLeave={e => {
-                  if (!isSubmitting && ageValid) e.currentTarget.style.background = COLORS.success;
-                }}
-                className={`px-6 py-2 rounded-lg font-semibold text-white ${
-                  (isSubmitting || !ageValid) ? 'cursor-not-allowed' : 'transition-colors duration-300'
-                }`}
-              >
-                {isSubmitting ? 'Submitting...' : 'Confirm & Submit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div 
-            className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.95)',
-              fontFamily: COLORS.font,
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            
-            <h2 className="text-xl font-bold text-center mb-4" style={{ color: COLORS.primary }}>{modalTitle}</h2>
-            
-            <div className="mb-6">
-              <p className="text-sm text-center mb-3" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                {modalMessage}
-              </p>
-              <p className="text-xs text-center text-gray-500" style={{ fontFamily: COLORS.font }}>
-                You will be redirected to your dashboard in a few seconds...
-              </p>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  navigate("/user/permittracker");
-                }}
-                style={{ background: COLORS.success }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
-                onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
-              >
-                Track Application
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
-          <div 
-            className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
-            style={{ 
-              background: 'rgba(255, 255, 255, 0.95)',
-              fontFamily: COLORS.font,
-              backdropFilter: 'blur(10px)'
-            }}
-          >
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <X className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-            
-            <h2 className="text-xl font-bold text-center mb-4" style={{ color: COLORS.danger }}>{modalTitle}</h2>
-            
-            <div className="mb-6">
-              <p className="text-sm text-center mb-3" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>
-                {modalMessage}
-              </p>
-              <p className="text-xs text-center text-gray-500" style={{ fontFamily: COLORS.font }}>
-                Please check your information and try again.
-              </p>
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setShowErrorModal(false)}
-                style={{ background: COLORS.danger }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
-                onMouseLeave={e => e.currentTarget.style.background = COLORS.danger}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
-              >
-                Close
-              </button>
-              
-              <button
-                onClick={() => {
-                  setShowErrorModal(false);
-                  setShowConfirmModal(true);
-                }}
-                style={{ background: COLORS.success }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
-                onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Verifying Modal */}
       {showVerifyingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+          <div 
+            className="p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-200"
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.95)',
+              fontFamily: COLORS.font,
+              backdropFilter: 'blur(10px)'
+            }}
+          >
             <div className="text-center">
               <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Verifying Document...</h3>
@@ -3110,29 +2924,33 @@ export default function LiquorPermitApplication() {
 
       {/* Verification Result Modal */}
       {showVerificationModal && verificationModalData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+          <div 
+            className="p-8 rounded-lg shadow-lg w-full max-w-2xl border border-gray-200 max-h-[90vh] overflow-y-auto"
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.95)',
+              fontFamily: COLORS.font,
+              backdropFilter: 'blur(10px)'
+            }}
+          >
+            <div className="flex items-center justify-center mb-6">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                verificationModalData.isVerified ? 'bg-green-100' : 'bg-red-100'
+              }`}>
                 {verificationModalData.isVerified ? (
-                  <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
+                  <Check className="w-8 h-8 text-green-600" />
                 ) : (
-                  <XCircle className="w-8 h-8 text-red-600 mr-3" />
+                  <X className="w-8 h-8 text-red-600" />
                 )}
-                <div>
-                  <h3 className="text-xl font-bold">
-                    {verificationModalData.isVerified ? 'Document Verified!' : 'Verification Failed'}
-                  </h3>
-                  <p className="text-sm text-gray-600">{verificationModalData.fileName}</p>
-                </div>
               </div>
-              <button
-                onClick={() => setShowVerificationModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
             </div>
+
+            <h2 className="text-xl font-bold text-center mb-2" style={{ 
+              color: verificationModalData.isVerified ? COLORS.success : COLORS.danger 
+            }}>
+              {verificationModalData.isVerified ? 'Document Verified!' : 'Verification Failed'}
+            </h2>
+            <p className="text-sm text-center text-gray-600 mb-4">{verificationModalData.fileName}</p>
 
             {verificationModalData.invalidReasons && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -3147,15 +2965,18 @@ export default function LiquorPermitApplication() {
 
             {verificationModalData.isVerified && (
               <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 font-semibold">✓ All verification checks passed!</p>
+                <p className="text-green-800 font-semibold">All verification checks passed!</p>
                 <p className="text-sm text-green-700 mt-1">The document has been successfully verified and matches the required criteria.</p>
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-center">
               <button
                 onClick={() => setShowVerificationModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                style={{ background: COLORS.success }}
+                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
+                onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
               >
                 Close
               </button>
@@ -3164,141 +2985,55 @@ export default function LiquorPermitApplication() {
         </div>
       )}
 
-      {/* Barangay Clearance ID Verification Modal */}
+      {/* Barangay Clearance Verification Modal */}
       {showBarangayModal && barangayVerificationResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center">
+        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+          <div 
+            className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.95)',
+              fontFamily: COLORS.font
+            }}
+          >
+            <div className="flex items-center justify-center mb-6">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                barangayVerificationResult.success ? 'bg-green-100' : 'bg-red-100'
+              }`}>
                 {barangayVerificationResult.success ? (
-                  <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
+                  <Check className="w-8 h-8 text-green-600" />
                 ) : (
-                  <XCircle className="w-8 h-8 text-red-600 mr-3" />
+                  <X className="w-8 h-8 text-red-600" />
                 )}
-                <h3 className="text-xl font-bold">
-                  {barangayVerificationResult.success ? 'ID Verified!' : 'Verification Failed'}
-                </h3>
               </div>
-              <button
-                onClick={() => setShowBarangayModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
             </div>
-
-            <p className="text-gray-700 mb-4">{barangayVerificationResult.message}</p>
+            
+            <h2 className="text-xl font-bold text-center mb-4" style={{ 
+              color: barangayVerificationResult.success ? COLORS.success : COLORS.danger 
+            }}>
+              {barangayVerificationResult.success ? 'Verification Successful' : 'Verification Failed'}
+            </h2>
+            
+            <p className="text-sm text-center mb-6" style={{ color: COLORS.secondary }}>
+              {barangayVerificationResult.message}
+            </p>
 
             {barangayVerificationResult.data && (
-              <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+              <div className="p-4 bg-gray-50 rounded-lg space-y-2 mb-6">
                 <p className="text-sm"><span className="font-medium">Permit ID:</span> {barangayVerificationResult.data.permit_id}</p>
                 <p className="text-sm"><span className="font-medium">Applicant:</span> {barangayVerificationResult.data.first_name} {barangayVerificationResult.data.last_name}</p>
                 <p className="text-sm"><span className="font-medium">Status:</span> <span className="text-green-600 font-semibold">{barangayVerificationResult.data.status}</span></p>
               </div>
             )}
 
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-center">
               <button
                 onClick={() => setShowBarangayModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                style={{ background: COLORS.success }}
+                onMouseEnter={e => e.currentTarget.style.background = COLORS.accent}
+                onMouseLeave={e => e.currentTarget.style.background = COLORS.success}
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-colors duration-300"
               >
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Modal */}
-      {showPreview.url && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={closePreview}>
-          <div className="relative max-w-4xl max-h-[90vh] overflow-auto bg-white rounded-lg" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={closePreview}
-              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <div className="p-4">
-              {showPreview.type === 'image' ? (
-                <img src={showPreview.url} alt={showPreview.name} className="max-w-full h-auto" />
-              ) : showPreview.type === 'application' ? (
-                <iframe src={showPreview.url} className="w-full h-[80vh]" title={showPreview.name} />
-              ) : (
-                <p>Preview not available for this file type</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Submit Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold mb-4">Confirm Submission</h3>
-            <p className="text-gray-700 mb-6">
-              Are you sure you want to submit this liquor permit application? Please ensure all information is correct.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isSubmitting}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Confirm Submit'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">{modalTitle}</h3>
-              <p className="text-gray-700 mb-6">{modalMessage}</p>
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center">
-              <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">{modalTitle}</h3>
-              <p className="text-gray-700 mb-6">{modalMessage}</p>
-              <button
-                onClick={() => setShowErrorModal(false)}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                OK
               </button>
             </div>
           </div>

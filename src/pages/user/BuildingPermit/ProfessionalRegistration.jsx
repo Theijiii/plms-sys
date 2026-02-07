@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload } from "lucide-react";
 import Swal from "sweetalert2";
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 
 const COLORS = {
   primary: '#4A90E2', // Blue for title
@@ -282,6 +283,7 @@ export default function ProfessionalRegistration() {
       
       if (result.success) {
         setIsSubmitting(false);
+        logPermitSubmission("Building Permit", result.data?.registration_id || "", { permit_type: "Professional Registration" });
         
         Swal.fire({
           icon: 'success',

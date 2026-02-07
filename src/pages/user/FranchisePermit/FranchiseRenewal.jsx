@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Upload, Check, X, Eye, FileText, AlertCircle, Shield, Key, RefreshCw, Calendar, Receipt, UserCheck, Loader2 } from "lucide-react";
 import Swal from 'sweetalert2';
+import { logPermitSubmission } from '../../../services/ActivityLogger';
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist/webpack';
 
@@ -1943,6 +1944,7 @@ const checkExistingPermit = async () => {
       
       if (data.success) {
         showSuccessMessage(`Renewal application submitted successfully! Application ID: ${data.data.application_id}`);
+        logPermitSubmission("Franchise Permit", data.data?.application_id || "", { permit_type: "Renewal" });
         
         setTimeout(() => {
           navigate("/user/permittracker");

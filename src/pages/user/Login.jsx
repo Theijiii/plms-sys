@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import Footer from '../../components/user/Footer';
 import { sendOtp, verifyOtp, registerUser, loginUser, getUserProfile } from "../../services/AuthService";
+import { logLogin, logRegistration } from "../../services/ActivityLogger";
 
 export default function Login() {
   const [pendingRegistration, setPendingRegistration] = useState(null);
@@ -292,6 +293,7 @@ export default function Login() {
     localStorage.setItem("email", loginEmail);
 
     closeOtpModal();
+    logLogin(loginEmail, "user");
     navigate("/user/dashboard");
   };
 
@@ -364,6 +366,7 @@ export default function Login() {
         setOtpSuccess("Registration successful! Redirecting to dashboard...");
         
         closeOtpModal();
+        logRegistration(otpTargetEmail, registerResponse.full_name || pendingRegistration.firstName || "");
         
         // Redirect to user dashboard
         setTimeout(() => {
@@ -421,6 +424,7 @@ export default function Login() {
         });
         
         closeOtpModal();
+        logLogin(otpTargetEmail, response.role || "user");
         
         // Redirect based on role
         setTimeout(() => {

@@ -107,21 +107,22 @@ function handleBuildingPermitSubmission() {
 
         // ===== 2. Insert into application table =====
         $stmt = $conn->prepare("INSERT INTO application 
-            (applicant_id, permit_group, use_of_permit, proposed_date_of_construction, expected_date_of_completion, total_estimated_cost, prc_license, remarks) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            (applicant_id, permit_group, use_of_permit, permit_action, proposed_date_of_construction, expected_date_of_completion, total_estimated_cost, prc_license, remarks) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         if (!$stmt) throw new Exception("Prepare application failed: " . $conn->error);
 
         $permit_group = trim($_POST['permit_group'] ?? '');
         $use_of_permit = trim($_POST['use_of_permit'] ?? '');
+        $permit_action = trim($_POST['permit_action'] ?? '');
         $proposed_date = $_POST['proposed_date_of_construction'] ?? null;
         $expected_date = $_POST['expected_date_of_completion'] ?? null;
         $total_cost = !empty($_POST['total_estimated_cost']) ? (float)$_POST['total_estimated_cost'] : 0;
         $prc_license = trim($_POST['prc_license'] ?? '');
         $remarks = trim($_POST['remarks'] ?? '');
 
-        $stmt->bind_param('issssdss',
-            $applicant_id, $permit_group, $use_of_permit,
+        $stmt->bind_param('isssssdss',
+            $applicant_id, $permit_group, $use_of_permit, $permit_action,
             $proposed_date, $expected_date, $total_cost, $prc_license, $remarks
         );
 
