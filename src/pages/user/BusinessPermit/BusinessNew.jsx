@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Upload, Check, X, Eye, FileText, Search, AlertCircle, Loader2, Shield } from "lucide-react";
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import Swal from 'sweetalert2';
 
 // Configure PDF.js worker - use the bundled worker from node_modules
 if (typeof window !== 'undefined') {
@@ -242,6 +243,46 @@ export default function BusinessNew() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validate contact number starts with 09
+    if (name === 'contact_number') {
+      // Only allow numbers
+      const cleaned = value.replace(/\D/g, '');
+      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Invalid Contact Number',
+          text: 'Contact number must start with 09',
+          confirmButtonColor: '#4A90E2'
+        });
+        return;
+      }
+      setFormData((prev) => ({ ...prev, [name]: cleaned }));
+      return;
+    }
+    
+    // Validate age when date of birth changes (must be 18+)
+    if (name === 'date_of_birth') {
+      const birthDate = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      if (age < 18) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Age Requirement',
+          text: 'Applicant must be at least 18 years old',
+          confirmButtonColor: '#4A90E2'
+        });
+        return;
+      }
+    }
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -301,15 +342,23 @@ export default function BusinessNew() {
   };
 
   const showSuccessMessage = (message) => {
-    setModalTitle('Success!');
-    setModalMessage(message);
-    setShowSuccessModal(true);
+    Swal.fire({
+      icon: 'success',
+      title: 'Success!',
+      text: message,
+      confirmButtonColor: '#4CAF50',
+      timer: 3000,
+      timerProgressBar: true
+    });
   };
 
   const showErrorMessage = (message) => {
-    setModalTitle('Error');
-    setModalMessage(message);
-    setShowErrorModal(true);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: message,
+      confirmButtonColor: '#E53935'
+    });
   };
 
   // ====== DOCUMENT VERIFICATION HELPER FUNCTIONS ======
@@ -1416,7 +1465,41 @@ export default function BusinessNew() {
         return;
       }
       setSubmitStatus(null);
-      setShowDeclarationModal(true);
+      Swal.fire({
+        title: 'Submit Application',
+        html: `
+          <div style="text-align: left; margin: 20px 0;">
+            <p style="margin-bottom: 15px;">Are you sure you want to submit your business permit application?</p>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 4px solid #4A90E2;">
+              <p style="margin-bottom: 10px; font-weight: bold;">Please confirm:</p>
+              <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="swal-declaration-checkbox" style="margin-right: 10px;" />
+                <span>I confirm that all information is correct and I agree to the terms</span>
+              </label>
+            </div>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4CAF50',
+        cancelButtonColor: '#E53935',
+        confirmButtonText: 'Submit Application',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+          const checkbox = document.getElementById('swal-declaration-checkbox');
+          if (!checkbox.checked) {
+            Swal.showValidationMessage('You must agree to the declaration');
+            return false;
+          }
+          return true;
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setAgreeDeclaration(true);
+          confirmDeclaration();
+        }
+      });
+      return;
     } else {
       const res = validateStep(currentStep);
       if (!res.ok) {
@@ -1430,7 +1513,12 @@ export default function BusinessNew() {
 
   const confirmDeclaration = async () => {
     if (!agreeDeclaration) {
-      setSubmitStatus({ type: 'error', message: 'You must agree to the declaration to proceed.' });
+      Swal.fire({
+        icon: 'warning',
+        title: 'Declaration Required',
+        text: 'You must agree to the declaration to proceed.',
+        confirmButtonColor: '#4A90E2'
+      });
       setShowDeclarationModal(false);
       return;
     }
@@ -1447,7 +1535,7 @@ export default function BusinessNew() {
       
       // CRITICAL FIELDS that must always be sent (with defaults if empty)
       const criticalFields = {
-        'owner_type': formData.owner_type || 'Individual',
+        'owner_type': (formData.owner_type && formData.owner_type.trim() !== '') ? formData.owner_type : 'Individual',
         'citizenship': formData.citizenship || '',
         'business_nature': formData.business_nature || '',
         'building_type': formData.building_type || '',

@@ -60,13 +60,7 @@ const AdminSidebarItems = [
     path: "/admin/buildingpermit",
     department: ["building", "super"],
   },
-  {
-    id: "buildingProcessing",
-    label: "Building Processing",
-    icon: FileText,
-    path: "/admin/buildingprocessing",
-    department: ["building", "super"],
-  },
+
   {
     id: "professionalRegistration",
     label: "Registration Application",

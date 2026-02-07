@@ -297,6 +297,25 @@ export default function BusPermitType() {
         [name]: file || null
       }));
     } else {
+      // Validate contact number starts with 09
+      if (name === 'contact_number') {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length > 0 && !cleaned.startsWith('09')) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Contact Number',
+            text: 'Contact number must start with 09',
+            confirmButtonColor: '#4A90E2'
+          });
+          return;
+        }
+        setFormData(prev => ({
+          ...prev,
+          [name]: cleaned
+        }));
+        return;
+      }
+      
       setFormData(prev => ({
         ...prev,
         [name]: value
@@ -504,15 +523,25 @@ export default function BusPermitType() {
   };
 
   const showSuccessMessage = (message) => {
-    setModalTitle('Success!');
-    setModalMessage(message);
-    setShowSuccessModal(true);
+    Swal.fire({
+      icon: 'success',
+      title: 'Success!',
+      text: message,
+      confirmButtonColor: '#4CAF50',
+      timer: 3000,
+      timerProgressBar: true
+    }).then(() => {
+      navigate("/user/permittracker");
+    });
   };
 
   const showErrorMessage = (message) => {
-    setModalTitle('Error');
-    setModalMessage(message);
-    setShowErrorModal(true);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: message,
+      confirmButtonColor: '#E53935'
+    });
   };
 
 const handleSubmit = async () => {

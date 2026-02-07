@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import Swal from 'sweetalert2';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {
@@ -241,6 +242,25 @@ export default function LiquorPermitApplication() {
         [name]: checked
       }));
     } else {
+      // Validate contact number for business_phone field
+      if (name === 'business_phone') {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length > 0 && !cleaned.startsWith('09')) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Contact Number',
+            text: 'Contact number must start with 09',
+            confirmButtonColor: '#4A90E2'
+          });
+          return;
+        }
+        setFormData(prev => ({
+          ...prev,
+          [name]: cleaned
+        }));
+        return;
+      }
+      
       setFormData(prev => ({
         ...prev,
         [name]: value
@@ -1104,15 +1124,25 @@ export default function LiquorPermitApplication() {
   };
 
   const showSuccessMessage = (message) => {
-    setModalTitle('Success!');
-    setModalMessage(message);
-    setShowSuccessModal(true);
+    Swal.fire({
+      icon: 'success',
+      title: 'Success!',
+      text: message,
+      confirmButtonColor: '#4CAF50',
+      timer: 3000,
+      timerProgressBar: true
+    }).then(() => {
+      navigate("/user/permittracker");
+    });
   };
 
   const showErrorMessage = (message) => {
-    setModalTitle('Error');
-    setModalMessage(message);
-    setShowErrorModal(true);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: message,
+      confirmButtonColor: '#E53935'
+    });
   };
 
   const handleSubmit = async () => {
