@@ -31,6 +31,7 @@ export default function BusPermitApplication() {
   const [activeTab, setActiveTab] = useState("all");
   const [sortOption, setSortOption] = useState('latest');
   const [searchQuery, setSearchQuery] = useState('');
+  const [permitTypeFilter, setPermitTypeFilter] = useState('all');
   const [counts, setCounts] = useState({
     total: 0,
     pending: 0,
@@ -170,6 +171,14 @@ export default function BusPermitApplication() {
         if (activeTab === "rejected") return permit.status === "REJECTED";
         if (activeTab === "compliance") return permit.status === "COMPLIANCE";
         return true;
+      });
+    }
+    
+    // Apply permit type filter
+    if (permitTypeFilter !== "all") {
+      filtered = filtered.filter(permit => {
+        const permitType = (permit.permit_type || '').toUpperCase();
+        return permitType === permitTypeFilter.toUpperCase();
       });
     }
     
@@ -1363,6 +1372,22 @@ const viewFile = async (file) => {
                 />
                 <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              
+              {/* Permit Type Filter */}
+              <div className="relative">
+                <select
+                  value={permitTypeFilter}
+                  onChange={(e) => setPermitTypeFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent appearance-none pr-10"
+                >
+                  <option value="all">All Permit Types</option>
+                  <option value="NEW">New</option>
+                  <option value="RENEWAL">Renewal</option>
+                </select>
+                <svg className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
               

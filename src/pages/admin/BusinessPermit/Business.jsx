@@ -144,6 +144,7 @@ export default function BusPermitAnalytics() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sizeFilter, setSizeFilter] = useState("all");
+  const [permitTypeFilter, setPermitTypeFilter] = useState("all");
   const [exporting, setExporting] = useState(false);
   const [exportType, setExportType] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -494,6 +495,14 @@ export default function BusPermitAnalytics() {
       });
     }
 
+    // Permit type filter
+    if (permitTypeFilter !== "all") {
+      filtered = filtered.filter(p => {
+        const permitType = (p.permit_type || "").toUpperCase();
+        return permitType === permitTypeFilter.toUpperCase();
+      });
+    }
+
     // Category filter
     if (categoryFilter !== "all") {
       filtered = filtered.filter(p => 
@@ -517,7 +526,7 @@ export default function BusPermitAnalytics() {
 
     setFilteredPermits(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [permits, startDate, endDate, searchTerm, statusFilter, categoryFilter, sizeFilter]);
+  }, [permits, startDate, endDate, searchTerm, statusFilter, categoryFilter, sizeFilter, permitTypeFilter]);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -1579,6 +1588,16 @@ export default function BusPermitAnalytics() {
                 <option value="pending">Pending</option>
                 <option value="compliance">For Compliance</option>
                 <option value="rejected">Rejected</option>
+              </select>
+
+              <select
+                value={permitTypeFilter}
+                onChange={(e) => setPermitTypeFilter(e.target.value)}
+                className="px-4 py-2 rounded-lg border border-[#E9E7E7] bg-white text-[#4D4A4A] focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent font-poppins"
+              >
+                <option value="all">All Permit Types</option>
+                <option value="NEW">New</option>
+                <option value="RENEWAL">Renewal</option>
               </select>
 
               <select

@@ -104,7 +104,7 @@ export default function BusinessNew() {
     owner_last_name: "",
     owner_first_name: "",
     owner_middle_name: "",
-    owner_type: "Individual",
+    owner_type: "",
     citizenship: "",
     corp_filipino_percent: 0,
     corp_foreign_percent: 0,

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Eye, Download, Calendar, FileText, X, CheckCircle, Clock, Upload, 
-  Check, Loader2, Building, Home, Briefcase, Building2, RefreshCw
+  Check, Loader2, Building, Home, Briefcase, Building2, RefreshCw, Filter,
+  ChevronUp, ChevronDown, FileDown, TrendingUp, AlertCircle, ArrowUpDown
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import Swal from "sweetalert2";
@@ -23,6 +24,13 @@ export default function PermitTracker() {
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [uploading, setUploading] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sortField, setSortField] = useState("submittedDate");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showFilters, setShowFilters] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -93,7 +101,10 @@ export default function PermitTracker() {
     return <FileText className="w-5 h-5" />;
   };
 
-  // Filtered tracking with type and status filters
+  // Get unique permit types for filter dropdown
+  const permitTypes = [...new Set(tracking.map(t => t.permitType).filter(Boolean))];
+
+  // Filtered tracking with type, status, and date range filters
   const filteredTracking = tracking.filter((t) => {
     const searchMatch = `${t.permitType} ${t.status} ${t.application_type} ${t.applicantName} ${t.businessName} ${t.id}`
       .toLowerCase()
@@ -102,8 +113,122 @@ export default function PermitTracker() {
     const typeMatch = filterType === 'all' || t.permitType?.toLowerCase().includes(filterType.toLowerCase());
     const statusMatch = filterStatus === 'all' || t.status === filterStatus;
     
-    return searchMatch && typeMatch && statusMatch;
+    // Date range filtering
+    let dateMatch = true;
+    if (dateFrom || dateTo) {
+      const submitDate = new Date(t.submittedDate);
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        dateMatch = dateMatch && submitDate >= fromDate;
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999); // Include entire day
+        dateMatch = dateMatch && submitDate <= toDate;
+      }
+    }
+    
+    return searchMatch && typeMatch && statusMatch && dateMatch;
   });
+
+  // Sorted tracking
+  const sortedTracking = [...filteredTracking].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+    
+    // Handle date fields
+    if (sortField.includes('Date')) {
+      aVal = new Date(aVal || 0).getTime();
+      bVal = new Date(bVal || 0).getTime();
+    }
+    
+    // Handle string fields
+    if (typeof aVal === 'string') {
+      aVal = aVal.toLowerCase();
+      bVal = bVal?.toLowerCase() || '';
+    }
+    
+    if (sortOrder === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    } else {
+      return aVal < bVal ? 1 : -1;
+    }
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(sortedTracking.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTracking = sortedTracking.slice(startIndex, endIndex);
+
+  // Handle sort
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    if (filteredTracking.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Data',
+        text: 'No applications to export.',
+        confirmButtonColor: '#4A90E2'
+      });
+      return;
+    }
+
+    const headers = ['Permit ID', 'Permit Type', 'Application Type', 'Status', 'Applicant Name', 'Business Name', 'Submitted Date', 'Expiration Date', 'Address', 'Contact'];
+    const csvData = filteredTracking.map(t => [
+      t.id,
+      t.permitType,
+      t.application_type,
+      t.status,
+      t.applicantName || 'N/A',
+      t.businessName || 'N/A',
+      formatDate(t.submittedDate),
+      formatDate(t.expirationDate),
+      t.address || 'N/A',
+      t.contactNumber || 'N/A'
+    ]);
+
+    const csv = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Permit-Applications-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Export Successful!',
+      text: `Exported ${filteredTracking.length} application(s) to CSV.`,
+      confirmButtonColor: '#4CAF50'
+    });
+  };
+
+  // Clear filters
+  const clearFilters = () => {
+    setSearch('');
+    setFilterType('all');
+    setFilterStatus('all');
+    setDateFrom('');
+    setDateTo('');
+    setCurrentPage(1);
+  };
 
   const viewDetails = (permit) => {
     setSelectedPermit(permit);
@@ -469,10 +594,55 @@ export default function PermitTracker() {
       <h1 className="text-xl md:text-3xl font-bold mb-2 text-center">
         E-Permit Tracker
       </h1>
-      <p className="mb-6 text-center text-sm">
+      <p className="mb-6 text-center text-sm text-gray-600 dark:text-gray-400">
         Track the status of all your permit applications in one place. <br />
-        Search by permit type, status, or permit ID.
+        Search, filter, and manage your applications efficiently.
       </p>
+
+      {/* Statistics Dashboard */}
+      {!loading && !error && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <FileText className="w-8 h-8 opacity-80" />
+              <span className="text-2xl font-bold">{statistics.total}</span>
+            </div>
+            <p className="text-xs font-medium opacity-90">Total Applications</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="w-8 h-8 opacity-80" />
+              <span className="text-2xl font-bold">{statistics.approved}</span>
+            </div>
+            <p className="text-xs font-medium opacity-90">Approved</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-lg p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="w-8 h-8 opacity-80" />
+              <span className="text-2xl font-bold">{statistics.pending}</span>
+            </div>
+            <p className="text-xs font-medium opacity-90">Pending</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <AlertCircle className="w-8 h-8 opacity-80" />
+              <span className="text-2xl font-bold">{statistics.forCompliance}</span>
+            </div>
+            <p className="text-xs font-medium opacity-90">For Compliance</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-2">
+              <X className="w-8 h-8 opacity-80" />
+              <span className="text-2xl font-bold">{statistics.rejected}</span>
+            </div>
+            <p className="text-xs font-medium opacity-90">Rejected</p>
+          </div>
+        </div>
+      )}
 
       {/* Applicant Info */}
       <div className="w-full max-w-2xl mx-auto mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -483,15 +653,120 @@ export default function PermitTracker() {
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className="w-full max-w-md mx-auto mb-8">
-        <input
-          type="text"
-          placeholder="Search by permit type, status, or ID..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-sm"
-        />
+      {/* Search and Filter Controls */}
+      <div className="mb-6 space-y-4">
+        {/* Search and Action Buttons */}
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div className="w-full md:w-96">
+            <input
+              type="text"
+              placeholder="Search by permit type, status, name, or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
+            >
+              <Filter className="w-4 h-4" />
+              {showFilters ? 'Hide' : 'Show'} Filters
+            </button>
+            
+            <button
+              onClick={fetchApplications}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm"
+              disabled={tracking.length === 0}
+            >
+              <FileDown className="w-4 h-4" />
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Permit Type Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Permit Type</label>
+                <select
+                  value={filterType}
+                  onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                >
+                  <option value="all">All Types</option>
+                  {permitTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                >
+                  <option value="all">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="For Compliance">For Compliance</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date From</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date To</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-3 flex justify-between items-center">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Showing {sortedTracking.length} of {tracking.length} applications
+              </p>
+              <button
+                onClick={clearFilters}
+                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -511,26 +786,77 @@ export default function PermitTracker() {
           </button>
         </div>
       ) : tracking.length === 0 ? (
-        <p className="text-gray-500 italic text-center flex-grow text-sm">
-          No permit applications submitted
-        </p>
+        <div className="text-center py-12">
+          <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">
+            No permit applications found
+          </p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">
+            Submit your first application to get started
+          </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto flex-grow">
-          <table className="w-full bg-white dark:bg-slate-800 shadow rounded-lg">
-            <thead className="bg-gray-50 dark:bg-slate-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Permit ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Permit Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Application Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Submitted Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Expiration Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredTracking.length > 0 ? (
-                filteredTracking.map((t) => (
+        <div className="space-y-4">
+          <div className="overflow-x-auto flex-grow">
+            <table className="w-full bg-white dark:bg-slate-800 shadow rounded-lg">
+              <thead className="bg-gray-50 dark:bg-slate-700">
+                <tr>
+                  <th 
+                    onClick={() => handleSort('id')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
+                  >
+                    <div className="flex items-center gap-1">
+                      Permit ID
+                      {sortField === 'id' && (
+                        sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                      {sortField !== 'id' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('permitType')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
+                  >
+                    <div className="flex items-center gap-1">
+                      Permit Type
+                      {sortField === 'permitType' && (
+                        sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                      {sortField !== 'permitType' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Application Type</th>
+                  <th 
+                    onClick={() => handleSort('status')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
+                  >
+                    <div className="flex items-center gap-1">
+                      Status
+                      {sortField === 'status' && (
+                        sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                      {sortField !== 'status' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('submittedDate')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
+                  >
+                    <div className="flex items-center gap-1">
+                      Submitted Date
+                      {sortField === 'submittedDate' && (
+                        sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                      {sortField !== 'submittedDate' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Expiration Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {paginatedTracking.length > 0 ? (
+                  paginatedTracking.map((t) => (
                   <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white font-mono">{t.id}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{t.permitType}</td>
@@ -604,144 +930,353 @@ export default function PermitTracker() {
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="text-center text-gray-500 py-4 text-sm">
-                    No matching permits found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      <Filter className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p className="font-medium">No matching permits found</p>
+                      <p className="text-xs mt-1">Try adjusting your filters or search criteria</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-800 px-4 py-3 rounded-lg shadow">
+              <div className="flex items-center gap-2 mb-3 md:mb-0">
+                <label className="text-sm text-gray-700 dark:text-gray-300">Items per page:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-slate-700 dark:text-white text-sm"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {startIndex + 1}-{Math.min(endIndex, sortedTracking.length)} of {sortedTracking.length}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  First
+                </button>
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1 border rounded text-sm ${
+                          currentPage === pageNum
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Next
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Last
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Details Modal */}
+      {/* Enhanced Details Modal */}
       {showModal && selectedPermit && (
-<  div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">Permit Details</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg z-10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold mb-1">Complete Application Details</h2>
+                  <p className="text-sm text-blue-100">Permit ID: {selectedPermit.id}</p>
+                </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Basic Information</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><strong>Permit ID:</strong> {selectedPermit.id}</p>
-                    <p><strong>Permit Type:</strong> {selectedPermit.permitType}</p>
-                    <p><strong>Application Type:</strong> {selectedPermit.application_type}</p>
-                    <p><strong>Status:</strong> 
-                      <span className={`ml-2 ${
-                        selectedPermit.status === 'Approved' ? 'text-green-600 dark:text-green-400' :
-                        selectedPermit.status === 'Rejected' ? 'text-red-600 dark:text-red-400' :
-                        'text-yellow-600 dark:text-yellow-400'
-                      }`}>
-                        {selectedPermit.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Applicant Information</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><strong>Applicant Name:</strong> {selectedPermit.applicantName}</p>
-                    <p><strong>Business Name:</strong> {selectedPermit.businessName}</p>
-                    <p><strong>Address:</strong> {selectedPermit.address}</p>
-                    <p><strong>Contact:</strong> {selectedPermit.contactNumber}</p>
-                  </div>
+            <div className="p-6 space-y-6">
+              {/* Status Badge */}
+              <div className="flex justify-center">
+                <div className={`px-6 py-3 rounded-full font-semibold text-lg flex items-center gap-2 ${
+                  selectedPermit.status === 'Approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                  selectedPermit.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                  selectedPermit.status === 'For Compliance' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                  'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                }`}>
+                  {getStatusIcon(selectedPermit.status)}
+                  {selectedPermit.status}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                  <Calendar className="w-5 h-5 mx-auto mb-2 text-blue-500" />
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Submitted</p>
+              {/* Timeline Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <Calendar className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Submitted</p>
                   <p className="font-semibold text-sm">{formatDate(selectedPermit.submittedDate)}</p>
                 </div>
                 
                 {selectedPermit.approvedDate && (
-                  <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <CheckCircle className="w-5 h-5 mx-auto mb-2 text-green-500" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Approved</p>
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Approved</p>
                     <p className="font-semibold text-sm">{formatDate(selectedPermit.approvedDate)}</p>
                   </div>
                 )}
 
-                {selectedPermit.rejectedDate && (
-                  <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <X className="w-5 h-5 mx-auto mb-2 text-red-500" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Rejected</p>
-                    <p className="font-semibold text-sm">{formatDate(selectedPermit.rejectedDate)}</p>
-                  </div>
-                )}
-
                 {selectedPermit.expirationDate && (
-                  <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <Calendar className="w-5 h-5 mx-auto mb-2 text-orange-500" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Expires</p>
+                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <Calendar className="w-6 h-6 mx-auto mb-2 text-orange-500" />
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Expires</p>
                     <p className="font-semibold text-sm">{formatDate(selectedPermit.expirationDate)}</p>
                   </div>
                 )}
+
+                {selectedPermit.fees && (
+                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <FileText className="w-6 h-6 mx-auto mb-2 text-purple-500" />
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Fees</p>
+                    <p className="font-semibold text-sm">{selectedPermit.fees}</p>
+                  </div>
+                )}
               </div>
 
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2 text-sm">Requirements</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  {selectedPermit.requirements.map((req, index) => (
-                    <li key={index}>{req}</li>
-                  ))}
-                </ul>
+              {/* Application Information */}
+              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-500" />
+                  Application Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Permit Type:</span>
+                      <span className="text-sm font-medium">{selectedPermit.permitType || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Application Type:</span>
+                      <span className={`text-sm font-medium px-2 py-0.5 rounded ${
+                        selectedPermit.application_type === 'New' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                        selectedPermit.application_type === 'Renewal' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
+                      }`}>{selectedPermit.application_type || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Receipt Number:</span>
+                      <span className="text-sm font-medium font-mono">{selectedPermit.receiptNumber || 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
+                      <span className="text-sm font-medium">{selectedPermit.email || user?.email || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Submitted By:</span>
+                      <span className="text-sm font-medium">{selectedPermit.applicantName || user?.fullName || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Applicant/Business Details */}
+              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-blue-500" />
+                  Applicant & Business Details
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Applicant Name</p>
+                      <p className="text-sm font-medium">{selectedPermit.applicantName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Business/Establishment Name</p>
+                      <p className="text-sm font-medium">{selectedPermit.businessName || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Complete Address</p>
+                    <p className="text-sm font-medium">{selectedPermit.address || 'N/A'}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Contact Number</p>
+                      <p className="text-sm font-medium">{selectedPermit.contactNumber || 'N/A'}</p>
+                    </div>
+                    {selectedPermit.tin && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">TIN</p>
+                        <p className="text-sm font-medium font-mono">{selectedPermit.tin}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Requirements Section */}
+              {selectedPermit.requirements && selectedPermit.requirements.length > 0 && (
+                <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    Submitted Requirements
+                  </h3>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {selectedPermit.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Compliance Notice */}
               {selectedPermit.complianceNotes && (
-                <div className="mb-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <h3 className="font-semibold text-yellow-700 dark:text-yellow-300 mb-1 text-sm">Compliance Requirements</h3>
-                  <p className="text-sm">{selectedPermit.complianceNotes}</p>
-                  <div className="mt-3">
-                    <label className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs leading-4 font-medium rounded text-white bg-yellow-600 hover:bg-yellow-700 cursor-pointer">
-                      <Upload className="w-3 h-3 mr-1" />
-                      Upload Compliance Documents
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => handleFileUpload(selectedPermit, e)}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                    </label>
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-5 border-l-4 border-yellow-500">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-yellow-800 dark:text-yellow-300 mb-2">Action Required: Compliance Documents Needed</h3>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-3">{selectedPermit.complianceNotes}</p>
+                      <label className="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg cursor-pointer transition-colors text-sm font-medium">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Compliance Documents
+                        <input
+                          type="file"
+                          multiple
+                          onChange={(e) => handleFileUpload(selectedPermit, e)}
+                          className="hidden"
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* Rejection Notice */}
               {selectedPermit.rejectionReason && (
-                <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                  <h3 className="font-semibold text-red-700 dark:text-red-300 mb-1 text-sm">Rejection Reason</h3>
-                  <p className="text-sm">{selectedPermit.rejectionReason}</p>
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-5 border-l-4 border-red-500">
+                  <div className="flex items-start gap-3">
+                    <X className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-red-800 dark:text-red-300 mb-2">Application Rejected</h3>
+                      <p className="text-sm text-red-700 dark:text-red-400">{selectedPermit.rejectionReason}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="flex justify-between items-center">
-                <p className="text-sm"><strong>Fees:</strong> {selectedPermit.fees}</p>
+              {/* Additional Information */}
+              {Object.keys(selectedPermit).filter(key => 
+                !['id', 'permitType', 'application_type', 'status', 'applicantName', 'businessName', 
+                  'address', 'contactNumber', 'submittedDate', 'approvedDate', 'rejectedDate', 
+                  'expirationDate', 'fees', 'requirements', 'complianceNotes', 'rejectionReason',
+                  'email', 'receiptNumber', 'tin'].includes(key) && 
+                selectedPermit[key] && 
+                selectedPermit[key] !== 'N/A' &&
+                typeof selectedPermit[key] !== 'object'
+              ).length > 0 && (
+                <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3">Additional Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Object.entries(selectedPermit).map(([key, value]) => {
+                      if (['id', 'permitType', 'application_type', 'status', 'applicantName', 'businessName', 
+                          'address', 'contactNumber', 'submittedDate', 'approvedDate', 'rejectedDate', 
+                          'expirationDate', 'fees', 'requirements', 'complianceNotes', 'rejectionReason',
+                          'email', 'receiptNumber', 'tin'].includes(key) || 
+                          !value || value === 'N/A' || typeof value === 'object') {
+                        return null;
+                      }
+                      return (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}:
+                          </span>
+                          <span className="text-sm font-medium">{value}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => downloadPermit(selectedPermit)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                     selectedPermit.status === 'Approved'
                       ? 'bg-green-500 hover:bg-green-600 text-white'
                       : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   }`}
                   disabled={selectedPermit.status !== 'Approved'}
                 >
-                  <Download className="w-4 h-4" />
-                  Download Permit
+                  <Download className="w-5 h-5" />
+                  {selectedPermit.status === 'Approved' ? 'Download Official Permit' : 'Download (Available when Approved)'}
+                </button>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 sm:flex-none px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Close
                 </button>
               </div>
             </div>
