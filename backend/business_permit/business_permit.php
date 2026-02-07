@@ -58,7 +58,7 @@ function generateUniqueFilename($originalName, $permitId, $documentType) {
     return "{$permitId}_{$documentType}_{$timestamp}_{$random}.{$extension}";
 }
 
-function saveDocumentFile($conn, $permitId, $fileField, $documentType, $uploadDir) {
+function saveDocumentFile($conn, $permitId, $fileField, $documentType, $uploadDir, $isVerified = 0, $verificationNotes = null) {
     global $maxFileSize;
     
     if (!isset($_FILES[$fileField]) || $_FILES[$fileField]['error'] !== UPLOAD_ERR_OK) {
@@ -145,10 +145,10 @@ function saveDocumentFile($conn, $permitId, $fileField, $documentType, $uploadDi
     $relativePath = 'uploads/' . $fileName;
     $fileSize = $file['size'];
     
-    // Insert into application_documents table
+    // Insert into application_documents table with verification data
     $docSql = "INSERT INTO application_documents 
-               (permit_id, document_type, document_name, file_path, file_type, file_size) 
-               VALUES (?, ?, ?, ?, ?, ?)";
+               (permit_id, document_type, document_name, file_path, file_type, file_size, is_verified, verification_notes) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     
     $docStmt = $conn->prepare($docSql);
     if (!$docStmt) {
@@ -156,7 +156,8 @@ function saveDocumentFile($conn, $permitId, $fileField, $documentType, $uploadDi
         return false;
     }
     
-    $docStmt->bind_param("issssi", $permitId, $docType, $docName, $relativePath, $fileType, $fileSize);
+    $verifiedInt = intval($isVerified);
+    $docStmt->bind_param("isssssis", $permitId, $docType, $docName, $relativePath, $fileType, $fileSize, $verifiedInt, $verificationNotes);
     
     if (!$docStmt->execute()) {
         error_log("Failed to insert document record: " . $docStmt->error);
@@ -400,20 +401,27 @@ try {
         'representative_scanned_id' => 'REPRESENTATIVE_SCANNED_ID'
     ];
     
-    // Process file uploads and save to documents table
+    // Process file uploads and save to documents table (with AI verification data)
     $uploadedDocuments = [];
     foreach ($fileDocumentMap as $fileField => $documentType) {
         if (isset($_FILES[$fileField]) && $_FILES[$fileField]['error'] === UPLOAD_ERR_OK) {
-            if (saveDocumentFile($conn, $permit_id, $fileField, $documentType, $uploadDir)) {
+            // Check for AI verification data sent from frontend
+            $isVerified = isset($postData[$fileField . '_verified']) ? intval($postData[$fileField . '_verified']) : 0;
+            $verificationNotes = isset($postData[$fileField . '_verification_notes']) ? $postData[$fileField . '_verification_notes'] : null;
+            
+            if (saveDocumentFile($conn, $permit_id, $fileField, $documentType, $uploadDir, $isVerified, $verificationNotes)) {
                 $uploadedDocuments[] = $documentType;
-                error_log("Successfully uploaded and saved document: $documentType");
+                error_log("Successfully uploaded and saved document: $documentType (verified: $isVerified)");
             }
         }
     }
     
     // Handle barangay clearance separately if needed
     if (isset($_FILES['barangay_clearance']) && $_FILES['barangay_clearance']['error'] === UPLOAD_ERR_OK) {
-        if (saveDocumentFile($conn, $permit_id, 'barangay_clearance', 'BARANGAY_CLEARANCE', $uploadDir)) {
+        $isVerified = isset($postData['barangay_clearance_verified']) ? intval($postData['barangay_clearance_verified']) : 0;
+        $verificationNotes = isset($postData['barangay_clearance_verification_notes']) ? $postData['barangay_clearance_verification_notes'] : null;
+        
+        if (saveDocumentFile($conn, $permit_id, 'barangay_clearance', 'BARANGAY_CLEARANCE', $uploadDir, $isVerified, $verificationNotes)) {
             $uploadedDocuments[] = 'BARANGAY_CLEARANCE';
         }
     }

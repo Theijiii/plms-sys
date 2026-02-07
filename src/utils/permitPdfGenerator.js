@@ -1,6 +1,8 @@
 import { jsPDF } from 'jspdf';
 import gsmLogoSrc from '../assets/GSM_logo.png';
-import plmsLogoSrc from '../../logoplms.png';
+
+// Use public URL - logoplms.png is in the public/ folder
+const plmsLogoSrc = new URL('/logoplms.png', window.location.origin).href;
 
 // ===== CONSTANTS =====
 const PW = 210, PH = 297, M = 12;
@@ -51,10 +53,20 @@ function drawBorder(doc) {
 }
 
 function drawWatermark(doc) {
-  doc.setTextColor(230, 230, 230);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(55);
-  doc.text('DIGITAL COPY', PW / 2, PH / 2, { align: 'center', angle: 45 });
+  try {
+    doc.setTextColor(230, 230, 230);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(55);
+    doc.text('DIGITAL COPY', PW / 2, PH / 2, { align: 'center', angle: 45 });
+  } catch {
+    // Fallback if angle not supported - draw multiple lines
+    doc.setTextColor(235, 235, 235);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(48);
+    doc.text('DIGITAL COPY', PW / 2, PH / 2 - 10, { align: 'center' });
+    doc.setFontSize(48);
+    doc.text('DIGITAL COPY', PW / 2, PH / 2 + 10, { align: 'center' });
+  }
   doc.setTextColor(...DARK);
 }
 

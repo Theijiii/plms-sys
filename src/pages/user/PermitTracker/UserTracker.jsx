@@ -26,6 +26,7 @@ export default function PermitTracker() {
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortField, setSortField] = useState("submittedDate");
@@ -237,8 +238,6 @@ export default function PermitTracker() {
     setSelectedPermit(permit);
     setShowModal(true);
   };
-
-  const [downloading, setDownloading] = useState(false);
 
   const downloadPermit = async (permit) => {
     if (permit.status !== "Approved") {
@@ -676,11 +675,39 @@ export default function PermitTracker() {
                         {formatDate(t.submittedDate)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(t.expirationDate)}
-                      </div>
+                    <td className="px-6 py-4 text-sm">
+                      {t.expirationDate ? (() => {
+                        const now = new Date();
+                        const exp = new Date(t.expirationDate);
+                        const daysLeft = Math.round((exp - now) / 86400000);
+                        const isExpired = daysLeft < 0;
+                        const isExpiringSoon = !isExpired && daysLeft <= 30;
+                        return (
+                          <div>
+                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(t.expirationDate)}
+                            </div>
+                            {isExpired && (
+                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                <X className="w-3 h-3" /> Expired ({Math.abs(daysLeft)}d ago)
+                              </span>
+                            )}
+                            {isExpiringSoon && (
+                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                <AlertCircle className="w-3 h-3" /> {daysLeft}d left
+                              </span>
+                            )}
+                            {!isExpired && !isExpiringSoon && (
+                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                <CheckCircle className="w-3 h-3" /> Active
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })() : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs">Not set</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex gap-2">

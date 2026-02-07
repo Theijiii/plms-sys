@@ -250,6 +250,11 @@ function handleApplication() {
             'inspection_fee_receipt' => $filePaths['inspection_fee_receipt']
         ];
         
+        // Save AI document verification data as JSON
+        if (!empty($_POST['document_verification_data'])) {
+            $data['document_verification_data'] = $_POST['document_verification_data'];
+        }
+        
         // Add MTOP reference for franchise applications
         if (!empty($_POST['mtop_reference_id'])) {
             $data['mtop_reference_id'] = $_POST['mtop_reference_id'];

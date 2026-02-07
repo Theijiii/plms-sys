@@ -1927,6 +1927,24 @@ const checkExistingPermit = async () => {
       formDataToSend.append('inspection_fee_checked', formData.inspection_fee_checked ? '1' : '0');
       formDataToSend.append('business_tax_fee_checked', formData.business_tax_fee_checked ? '1' : '0');
       
+      // Add AI document verification data as JSON for backend storage
+      if (documentVerification) {
+        const verificationData = {};
+        Object.entries(documentVerification).forEach(([docType, verInfo]) => {
+          if (verInfo && (verInfo.isVerified || verInfo.results || verInfo.error)) {
+            verificationData[docType] = {
+              isVerified: !!verInfo.isVerified,
+              notes: verInfo.isVerified 
+                ? 'AI Verified: Document type and owner name matched' 
+                : (verInfo.error || 'AI Verification failed or not attempted')
+            };
+          }
+        });
+        if (Object.keys(verificationData).length > 0) {
+          formDataToSend.append('document_verification_data', JSON.stringify(verificationData));
+        }
+      }
+      
       const response = await fetch(backendUrl, {
         method: "POST",
         body: formDataToSend

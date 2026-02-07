@@ -1652,6 +1652,28 @@ export default function BusinessNew() {
       // Add gross_sale (required by DB)
       formDataToSend.append('gross_sale', formData.gross_sale || "0");
 
+      // Add AI document verification data for each uploaded document
+      if (documentVerification) {
+        const docFieldMap = {
+          'bir_certificate': 'bir_certificate',
+          'lease_or_title': 'lease_or_title',
+          'fsic': 'fsic',
+          'owner_valid_id': 'owner_valid_id',
+          'barangay_clearance': 'barangay_clearance'
+        };
+        Object.entries(docFieldMap).forEach(([frontendKey, backendKey]) => {
+          if (documentVerification[frontendKey]) {
+            formDataToSend.append(`${backendKey}_verified`, documentVerification[frontendKey].isVerified ? '1' : '0');
+            if (documentVerification[frontendKey].results) {
+              const notes = documentVerification[frontendKey].isVerified 
+                ? 'AI Verified: Document type and owner name matched' 
+                : (documentVerification[frontendKey].error || 'AI Verification failed');
+              formDataToSend.append(`${backendKey}_verification_notes`, notes);
+            }
+          }
+        });
+      }
+
       console.log('FormData entries:');
       for (let [key, value] of formDataToSend.entries()) {
         console.log(`${key}:`, value);

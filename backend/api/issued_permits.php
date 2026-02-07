@@ -34,7 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 $issuedPermits = [];
 $now = date('Y-m-d H:i:s');
 
+// Department filter - only query relevant DB when specified
+$departmentFilter = isset($_GET['department']) ? trim($_GET['department']) : '';
+
 // ===== BUSINESS PERMIT =====
+if (!$departmentFilter || $departmentFilter === 'Business Permit'):
 try {
     $conn = new mysqli('localhost', 'eplms_paul', 'mypassword', 'eplms_business_permit_db');
     if (!$conn->connect_error) {
@@ -99,8 +103,10 @@ try {
 } catch (Exception $e) {
     error_log("Issued Permits - Business permit error: " . $e->getMessage());
 }
+endif;
 
 // ===== BARANGAY PERMIT =====
+if (!$departmentFilter || $departmentFilter === 'Barangay Permit'):
 try {
     $conn = new mysqli('localhost', 'eplms_karl', 'mypassword', 'eplms_barangay_permit_db');
     if (!$conn->connect_error) {
@@ -163,8 +169,10 @@ try {
 } catch (Exception $e) {
     error_log("Issued Permits - Barangay permit error: " . $e->getMessage());
 }
+endif;
 
 // ===== BUILDING PERMIT =====
+if (!$departmentFilter || $departmentFilter === 'Building Permit'):
 try {
     $conn = new mysqli('localhost', 'eplms_ella', 'mypassword', 'eplms_building_permit_db');
     if (!$conn->connect_error) {
@@ -230,8 +238,10 @@ try {
 } catch (Exception $e) {
     error_log("Issued Permits - Building permit error: " . $e->getMessage());
 }
+endif;
 
 // ===== FRANCHISE PERMIT =====
+if (!$departmentFilter || $departmentFilter === 'Franchise Permit'):
 try {
     $conn = new mysqli('localhost', 'eplms_kobe', 'mypassword', 'eplms_franchise_applications');
     if (!$conn->connect_error) {
@@ -294,6 +304,7 @@ try {
 } catch (Exception $e) {
     error_log("Issued Permits - Franchise permit error: " . $e->getMessage());
 }
+endif;
 
 // Calculate summary stats
 $totalIssued = count($issuedPermits);

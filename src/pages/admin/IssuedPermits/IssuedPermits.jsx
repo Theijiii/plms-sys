@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
 import {
   Search,
   Filter,
@@ -17,7 +18,17 @@ import {
   Save,
 } from "lucide-react";
 
+const DEPT_TO_CATEGORY = {
+  business: "Business Permit",
+  building: "Building Permit",
+  transport: "Franchise Permit",
+  barangay: "Barangay Permit",
+};
+
 export default function IssuedPermits() {
+  const { user } = useAuth();
+  const adminDept = user?.department || "super";
+  const isSuper = adminDept === "super";
   const [permits, setPermits] = useState([]);
   const [stats, setStats] = useState({ totalIssued: 0, totalActive: 0, totalExpired: 0, expiringSoon: 0 });
   const [loading, setLoading] = useState(true);
@@ -48,7 +59,8 @@ export default function IssuedPermits() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/backend/api/issued_permits.php");
+      const deptParam = !isSuper && DEPT_TO_CATEGORY[adminDept] ? `?department=${encodeURIComponent(DEPT_TO_CATEGORY[adminDept])}` : "";
+      const res = await fetch(`/backend/api/issued_permits.php${deptParam}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data.success) {
@@ -117,9 +129,19 @@ export default function IssuedPermits() {
     }
   };
 
+  // Available categories based on department
+  const availableCategories = isSuper
+    ? ["Business Permit", "Building Permit", "Franchise Permit", "Barangay Permit"]
+    : DEPT_TO_CATEGORY[adminDept] ? [DEPT_TO_CATEGORY[adminDept]] : [];
+
   // Filtering + sorting
   const filtered = useMemo(() => {
     let list = [...permits];
+
+    // Department filter (safety net - backend also filters)
+    if (!isSuper && DEPT_TO_CATEGORY[adminDept]) {
+      list = list.filter((p) => p.permitCategory === DEPT_TO_CATEGORY[adminDept]);
+    }
 
     // Search
     if (search.trim()) {
@@ -362,11 +384,10 @@ export default function IssuedPermits() {
               onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
               className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              <option value="all">All Categories</option>
-              <option value="Business Permit">Business Permit</option>
-              <option value="Building Permit">Building Permit</option>
-              <option value="Franchise Permit">Franchise Permit</option>
-              <option value="Barangay Permit">Barangay Permit</option>
+              <option value="all">{isSuper ? "All Categories" : DEPT_TO_CATEGORY[adminDept] || "All Categories"}</option>
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
           </div>
 

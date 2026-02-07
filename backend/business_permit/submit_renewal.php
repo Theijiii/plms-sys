@@ -319,28 +319,34 @@ try {
                 if (move_uploaded_file($fileData['tmp_name'], $target_path)) {
                     error_log("File uploaded successfully: " . $target_path);
                     
+                    // Check for AI verification data sent from frontend
+                    $is_verified = isset($_POST[$fieldName . '_verified']) ? intval($_POST[$fieldName . '_verified']) : 0;
+                    $verification_notes = isset($_POST[$fieldName . '_verification_notes']) ? $_POST[$fieldName . '_verification_notes'] : null;
+                    
                     // Save to application_documents table - using permit_id for foreign key
                     $doc_sql = "INSERT INTO application_documents (
                         permit_id, document_type, document_name, 
-                        file_path, file_type, file_size, upload_date
-                    ) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                        file_path, file_type, file_size, upload_date, is_verified, verification_notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)";
                     
                     $doc_stmt = $conn->prepare($doc_sql);
                     if ($doc_stmt) {
                         $doc_stmt->bind_param(
-                            'issssi',
-                            $new_permit_id,  // Use the auto-generated permit_id for foreign key reference
+                            'isssssis',
+                            $new_permit_id,
                             $document_type,
                             $original_name,
                             $target_path,
                             $fileData['type'],
-                            $fileData['size']
+                            $fileData['size'],
+                            $is_verified,
+                            $verification_notes
                         );
                         
                         if (!$doc_stmt->execute()) {
                             error_log('Failed to save document record: ' . $doc_stmt->error);
                         } else {
-                            error_log("Document saved to database");
+                            error_log("Document saved to database (verified: $is_verified)");
                         }
                         $doc_stmt->close();
                     }
