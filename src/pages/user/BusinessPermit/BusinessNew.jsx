@@ -3582,7 +3582,7 @@ export default function BusinessNew() {
     <div className="mx-1 mt-1 p-6 rounded-lg min-h-screen" style={{ background: COLORS.background, color: COLORS.secondary, fontFamily: COLORS.font }}>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold" style={{ color: COLORS.primary, fontFamily: COLORS.font }}>Business Permit Application</h1>
+          <h1 className="text-2xl md:text-4xl font-bold" style={{ color: COLORS.primary, fontFamily: COLORS.font }}>BUSINESS NEW PERMIT APPLICATION</h1>
           <p className="mt-2" style={{ color: COLORS.secondary, fontFamily: COLORS.font }}>Permit Type: <span className="font-semibold" style={{ color: COLORS.success }}>{permitType}</span></p>
         </div>
         <div className="flex justify-end">

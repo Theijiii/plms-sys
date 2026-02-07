@@ -2662,7 +2662,7 @@ export default function LiquorPermitApplication() {
             </div>
             <div>
               <h1 className="text-2xl md:text-4xl font-bold" style={{ color: COLORS.primary }}>
-                Liquor Permit Application
+                LIQUOR PERMIT APPLICATION
               </h1>
               <p className="mt-1 text-lg font-semibold text-blue-700">
                 Caloocan City Business Permit and Licensing Office

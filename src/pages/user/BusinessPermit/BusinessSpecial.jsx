@@ -389,7 +389,7 @@ export default function BusinessSpecialPermitApplication() {
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-bold text-lg" style={{ color: COLORS.primary }}>Application Summary</h4>
               <div className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                Special Permit Application
+                SPECIAL PERMIT APPLICATION
               </div>
             </div>
             

@@ -267,7 +267,7 @@ try {
         'date_of_birth', 'contact_number', 'email_address', 'home_address',
         'valid_id_type', 'valid_id_number', 'business_name', 'business_nature',
         'building_type', 'capital_investment', 'house_bldg_no', 'street',
-        'barangay', 'zoning_permit_id', 'sanitation_permit_id', 'business_area',
+        'barangay', 'zoning_permit_id', 'business_area',
         'total_floor_area', 'operation_time_from', 'operation_time_to',
         'operation_type', 'total_employees', 'owner_representative_name',
         'date_submitted'
@@ -280,12 +280,21 @@ try {
         }
     }
     
-    // Check owner_scanned_id from files
-    if (!isset($_FILES['owner_scanned_id']) || $_FILES['owner_scanned_id']['error'] !== UPLOAD_ERR_OK) {
-        $missingFields[] = 'owner_scanned_id';
+    // Check sanitation_permit_id ONLY for health-related businesses
+    $healthBusinesses = [
+        'Health / Clinic / Pharmacy',
+        'Restaurant / Eatery / Food Service',
+        'Catering Services',
+        'Bakery / Pastry / Cake Shop',
+        'Water Refilling Station'
+    ];
+    $business_nature = $postData['business_nature'] ?? '';
+    if (in_array($business_nature, $healthBusinesses) && empty($postData['sanitation_permit_id'])) {
+        $missingFields[] = 'sanitation_permit_id (required for health-related businesses)';
     }
     
-    // Check representative_scanned_id if representative is selected
+    // Check representative_scanned_id ONLY if representative is selected
+    // owner_scanned_id is deprecated and no longer used
     if (isset($postData['owner_type_declaration']) && $postData['owner_type_declaration'] === 'Representative') {
         if (!isset($_FILES['representative_scanned_id']) || $_FILES['representative_scanned_id']['error'] !== UPLOAD_ERR_OK) {
             $missingFields[] = 'representative_scanned_id';
