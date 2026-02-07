@@ -1,516 +1,333 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Swal from "sweetalert2";
 import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Clock,
   Search,
   RefreshCw,
   FileText,
-  X,
-  CheckCircle,
   User,
-  Clock,
-  AlertCircle,
-  XCircle,
-  Eye,
-  ChevronDown,
-  Car,
-  Route,
-  ShieldCheck,
-  Clipboard,
-  Bot,
-  ShieldAlert,
-  ScanSearch,
+  Bus,
   MapPin,
-  Phone,
-  Mail,
-  Calendar,
-  Hash,
-  FileCheck,
-  Truck,
-  BadgeCheck,
-  Wrench,
-  ClipboardCheck
+  Eye,
+  Car,
+  Ticket,
 } from "lucide-react";
 
 const API_BASE = "/backend/franchise_permit";
 
-// Franchise-specific processing steps
-const PROCESSING_STEPS = [
-  { key: "vehicle_inspection", label: "Vehicle Inspection", icon: Car, color: "#4A90E2" },
-  { key: "route_verification", label: "Route/Zone Verification", icon: Route, color: "#9C27B0" },
-  { key: "lto_compliance", label: "LTO Compliance Check", icon: Clipboard, color: "#FF9800" },
-  { key: "insurance_check", label: "Insurance & Fees Verification", icon: ShieldCheck, color: "#E91E63" },
-  { key: "toda_verification", label: "TODA/Operator Verification", icon: Truck, color: "#00BCD4" },
-  { key: "final_review", label: "Final Review & Clearance", icon: ClipboardCheck, color: "#4CAF50" },
-];
+const STATUS_CONFIG = {
+  pending: { label: "Pending", color: "bg-amber-100 text-amber-800", icon: Clock },
+  approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  rejected: { label: "Rejected", color: "bg-red-100 text-red-800", icon: XCircle },
+  under_review: { label: "Under Review", color: "bg-blue-100 text-blue-800", icon: Eye },
+  document_verification: { label: "Document Verification", color: "bg-purple-100 text-purple-800", icon: FileText },
+  field_inspection_scheduled: { label: "Field Inspection", color: "bg-cyan-100 text-cyan-800", icon: MapPin },
+  payment_verification: { label: "Payment Verification", color: "bg-yellow-100 text-yellow-800", icon: AlertCircle },
+  for_manager_approval: { label: "For Manager Approval", color: "bg-indigo-100 text-indigo-800", icon: Ticket },
+  ready_for_release: { label: "Ready for Release", color: "bg-emerald-100 text-emerald-800", icon: CheckCircle },
+};
 
-// AI Verification Badge Component
-function AIVerificationBadge({ status }) {
-  const config = {
-    verified: {
-      icon: <Bot className="w-4 h-4" />,
-      label: "AI Verified",
-      bg: "bg-emerald-50 dark:bg-emerald-900/30",
-      border: "border-emerald-200 dark:border-emerald-700",
-      text: "text-emerald-700 dark:text-emerald-300",
-      dot: "bg-emerald-500"
-    },
-    flagged: {
-      icon: <ShieldAlert className="w-4 h-4" />,
-      label: "AI Flagged",
-      bg: "bg-red-50 dark:bg-red-900/30",
-      border: "border-red-200 dark:border-red-700",
-      text: "text-red-700 dark:text-red-300",
-      dot: "bg-red-500"
-    },
-    pending: {
-      icon: <ScanSearch className="w-4 h-4" />,
-      label: "AI Review Pending",
-      bg: "bg-amber-50 dark:bg-amber-900/30",
-      border: "border-amber-200 dark:border-amber-700",
-      text: "text-amber-700 dark:text-amber-300",
-      dot: "bg-amber-500"
-    },
-    not_checked: {
-      icon: <Bot className="w-4 h-4" />,
-      label: "Not AI Checked",
-      bg: "bg-gray-50 dark:bg-gray-800",
-      border: "border-gray-200 dark:border-gray-700",
-      text: "text-gray-500 dark:text-gray-400",
-      dot: "bg-gray-400"
-    }
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+  try {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
+    });
+  } catch { return "N/A"; }
+};
+
+const mapStatusToFrontend = (status) => {
+  if (!status) return "Pending";
+  const map = {
+    pending: "Pending", approved: "Approved", rejected: "Rejected",
+    under_review: "Under Review", document_verification: "Document Verification",
+    field_inspection_scheduled: "Field Inspection", payment_verification: "Payment Verification",
+    for_manager_approval: "For Manager Approval", ready_for_release: "Ready for Release",
   };
-
-  const c = config[status] || config.not_checked;
-
-  return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${c.bg} ${c.border} ${c.text}`}>
-      <span className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
-      {c.icon}
-      <span className="text-xs font-semibold">{c.label}</span>
-    </div>
-  );
-}
-
-// Simulate AI verification based on data completeness
-function getAIVerificationStatus(app) {
-  if (!app) return "not_checked";
-  const hasVehicle = app.plate_number && app.engine_number && app.chassis_number;
-  const hasLTO = app.lto_or_number && app.lto_cr_number;
-  const hasRoute = app.route_zone && app.toda_name;
-  if (hasVehicle && hasLTO && hasRoute) return "verified";
-  if (!hasVehicle) return "flagged";
-  return "pending";
-}
+  return map[status.toLowerCase()] || status;
+};
 
 export default function FranchiseProcessing() {
   const [applications, setApplications] = useState([]);
-  const [selectedApp, setSelectedApp] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedApp, setSelectedApp] = useState(null);
   const [note, setNote] = useState("");
-  const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, rejected: 0, under_review: 0 });
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOption, setSortOption] = useState("latest");
   const [activeTab, setActiveTab] = useState("all");
-  const [processingSteps, setProcessingSteps] = useState({});
-  const [actionsOpen, setActionsOpen] = useState(null);
-  const dropdownRef = useRef(null);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setActionsOpen(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  useEffect(() => {
-    fetchApplications();
-  }, []);
+  const stats = useMemo(() => {
+    const total = applications.length;
+    const approved = applications.filter(a => (a.status || "").toLowerCase() === "approved").length;
+    const pending = applications.filter(a => !a.status || (a.status || "").toLowerCase() === "pending").length;
+    const rejected = applications.filter(a => (a.status || "").toLowerCase() === "rejected").length;
+    const inProcess = total - approved - pending - rejected;
+    return { total, approved, pending, rejected, inProcess };
+  }, [applications]);
 
   const fetchApplications = async () => {
-    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin_fetch.php?limit=200`);
-      const data = await res.json();
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${API_BASE}/admin_fetch.php`);
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const data = await response.json();
       if (data.success && Array.isArray(data.data)) {
-        setApplications(data.data);
-        if (data.stats?.overall) {
-          setStats({
-            total: data.stats.overall.total || 0,
-            approved: data.stats.overall.approved || 0,
-            pending: data.stats.overall.pending || 0,
-            rejected: data.stats.overall.rejected || 0,
-            under_review: data.stats.overall.under_review || 0,
-          });
-        } else {
-          computeStats(data.data);
-        }
+        const transformed = data.data.map((f) => ({
+          ...f,
+          full_name: `${f.first_name || ""} ${f.middle_initial ? f.middle_initial + "." : ""} ${f.last_name || ""}`.trim() || "N/A",
+          display_status: mapStatusToFrontend(f.status),
+        }));
+        setApplications(transformed);
+      } else {
+        throw new Error(data.message || "Failed to fetch applications");
       }
     } catch (err) {
-      console.error("Error loading franchise permits:", err);
+      console.error("Error loading franchise applications:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const computeStats = (apps) => {
-    const total = apps.length;
-    const approved = apps.filter((a) => a.status?.toLowerCase() === "approved").length;
-    const pending = apps.filter((a) => a.status?.toLowerCase() === "pending").length;
-    const rejected = apps.filter((a) => a.status?.toLowerCase() === "rejected").length;
-    const under_review = apps.filter((a) => a.status?.toLowerCase() === "under_review").length;
-    setStats({ total, approved, pending, rejected, under_review });
-  };
+  useEffect(() => { fetchApplications(); }, []);
 
-  // Filtered applications
   const filteredApps = useMemo(() => {
-    let result = [...applications];
-
-    if (activeTab !== "all") {
-      result = result.filter((a) => a.status?.toLowerCase() === activeTab);
+    let filtered = [...applications];
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(a => (a.status || "pending").toLowerCase() === statusFilter);
     }
-
+    if (activeTab !== "all") {
+      filtered = filtered.filter(a => (a.permit_subtype || "").toLowerCase() === activeTab.toLowerCase());
+    }
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (a) =>
-          (a.first_name || "").toLowerCase().includes(q) ||
-          (a.last_name || "").toLowerCase().includes(q) ||
-          (a.plate_number || "").toLowerCase().includes(q) ||
-          (a.application_id || "").toLowerCase().includes(q) ||
-          (a.toda_name || "").toLowerCase().includes(q) ||
-          (a.route_zone || "").toLowerCase().includes(q)
+      const term = searchQuery.toLowerCase();
+      filtered = filtered.filter(a =>
+        (a.full_name || "").toLowerCase().includes(term) ||
+        (a.plate_number || "").toLowerCase().includes(term) ||
+        (a.toda_name || "").toLowerCase().includes(term) ||
+        (a.application_id || "").toString().includes(term) ||
+        (a.route_zone || "").toLowerCase().includes(term)
       );
     }
+    if (sortOption === "latest") {
+      filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    } else if (sortOption === "oldest") {
+      filtered.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    } else if (sortOption === "name_asc") {
+      filtered.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+    }
+    return filtered;
+  }, [applications, statusFilter, searchQuery, sortOption, activeTab]);
 
-    return result;
-  }, [applications, activeTab, searchQuery]);
-
-  const viewApplication = (app) => {
-    setSelectedApp(app);
-    setNote(app.remarks || "");
-    setProcessingSteps({
-      vehicle_inspection: false,
-      route_verification: false,
-      lto_compliance: false,
-      insurance_check: false,
-      toda_verification: false,
-      final_review: false,
-    });
-  };
-
-  const toggleStep = (key) => {
-    setProcessingSteps((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Update status
-  const updateStatus = async (status) => {
-    if (!selectedApp) return;
-
-    const statusConfig = {
-      approved: { title: "Approve Franchise?", color: "#4CAF50", icon: "question" },
-      rejected: { title: "Reject Application?", color: "#E53935", icon: "warning" },
-      pending: { title: "Set to Pending?", color: "#FDA811", icon: "info" },
-      under_review: { title: "Set Under Review?", color: "#4A90E2", icon: "info" },
-    };
-
-    const config = statusConfig[status] || statusConfig.pending;
-
-    const result = await Swal.fire({
-      title: config.title,
-      html: `
-        <div class="text-left">
-          <p class="mb-2">You are about to <strong>${status.replace("_", " ")}</strong> this franchise permit application:</p>
-          <div class="bg-gray-50 p-3 rounded-lg mb-3">
-            <p class="text-sm"><strong>Application ID:</strong> ${selectedApp.application_id}</p>
-            <p class="text-sm"><strong>Operator:</strong> ${selectedApp.first_name} ${selectedApp.last_name}</p>
-            <p class="text-sm"><strong>Plate No.:</strong> ${selectedApp.plate_number || "N/A"}</p>
-            <p class="text-sm"><strong>Route:</strong> ${selectedApp.route_zone || "N/A"}</p>
-          </div>
-          ${status === "rejected" ? '<p class="text-sm text-red-600">Please provide a reason for rejection.</p>' : '<p class="text-sm text-gray-600">Add notes (optional).</p>'}
-        </div>
-      `,
-      icon: config.icon,
-      input: "textarea",
-      inputLabel: status === "rejected" ? "Reason for rejection (required)" : "Notes (optional)",
-      inputPlaceholder: "Enter notes...",
-      inputValue: note,
-      inputValidator:
-        status === "rejected"
-          ? (value) => {
-              if (!value) return "You must provide a reason for rejection!";
-            }
-          : null,
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${status.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
-      cancelButtonText: "Cancel",
-      confirmButtonColor: config.color,
-      cancelButtonColor: "#6b7280",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const res = await fetch(`${API_BASE}/update_status.php`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            application_id: selectedApp.application_id,
-            status,
-            remarks: result.value || note,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          const updated = applications.map((a) =>
-            a.application_id === selectedApp.application_id
-              ? { ...a, status, remarks: result.value || note }
-              : a
-          );
-          setApplications(updated);
-          computeStats(updated);
-
-          await Swal.fire({
-            title: "Success!",
-            text: `Application ${status.replace("_", " ")} successfully!`,
-            icon: "success",
-            confirmButtonColor: config.color,
-          });
-
-          setSelectedApp(null);
-        } else {
-          await Swal.fire({ title: "Error", text: data.message || "Failed to update.", icon: "error" });
+  const updateStatus = async (appId, status, comments = "") => {
+    try {
+      const response = await fetch(`${API_BASE}/update_status.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          application_id: appId,
+          status: status.toLowerCase().replace(/\s+/g, "_"),
+          remarks: comments,
+          updated_by: "Admin",
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        Swal.fire({ icon: "success", title: "Updated!", text: `Application ${status.toLowerCase()} successfully.`, confirmButtonColor: "#4CAF50", timer: 2000 });
+        await fetchApplications();
+        if (selectedApp && (selectedApp.application_id === appId)) {
+          setSelectedApp(prev => ({ ...prev, status: status.toLowerCase().replace(/\s+/g, "_"), display_status: mapStatusToFrontend(status.toLowerCase().replace(/\s+/g, "_")), remarks: data.data?.remarks || prev.remarks }));
         }
-      } catch (err) {
-        console.error(err);
-        await Swal.fire({ title: "Error", text: "Error updating status.", icon: "error" });
+      } else {
+        Swal.fire({ icon: "error", title: "Error", text: data.message || "Failed to update status", confirmButtonColor: "#E53935" });
       }
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "Error", text: "Error updating status: " + err.message, confirmButtonColor: "#E53935" });
     }
   };
 
-  const handleQuickAction = (app, action) => {
-    setActionsOpen(null);
-    if (action === "view") {
-      viewApplication(app);
-    } else {
-      viewApplication(app);
-      if (action === "approve") setTimeout(() => updateStatus("approved"), 300);
-      if (action === "reject") setTimeout(() => updateStatus("rejected"), 300);
-      if (action === "review") setTimeout(() => updateStatus("under_review"), 300);
+  const handleStatusAction = async (status) => {
+    if (!selectedApp) return;
+    const appId = selectedApp.application_id || selectedApp.id;
+    const result = await Swal.fire({
+      title: `${status} this application?`,
+      html: `<div class="text-left text-sm">
+        <p><strong>ID:</strong> ${appId}</p>
+        <p><strong>Applicant:</strong> ${selectedApp.full_name}</p>
+        <p><strong>Vehicle:</strong> ${selectedApp.plate_number || "N/A"}</p>
+      </div>`,
+      icon: status === "Rejected" ? "warning" : "question",
+      input: "textarea",
+      inputLabel: status === "Rejected" ? "Reason for rejection (required)" : "Add notes (optional)",
+      inputPlaceholder: "Enter notes...",
+      inputValue: note,
+      inputValidator: status === "Rejected" ? (v) => (!v ? "Rejection reason is required" : null) : undefined,
+      showCancelButton: true,
+      confirmButtonText: `Yes, ${status}`,
+      confirmButtonColor: status === "Approved" ? "#4CAF50" : status === "Rejected" ? "#E53935" : "#4A90E2",
+      cancelButtonColor: "#6b7280",
+    });
+    if (result.isConfirmed) {
+      await updateStatus(appId, status, result.value || "");
+      setNote("");
     }
   };
 
   const getStatusBadge = (status) => {
-    const s = (status || "pending").toLowerCase();
-    const map = {
-      approved: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-      rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-      pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-      under_review: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    };
-    return map[s] || map.pending;
+    const s = (status || "pending").toLowerCase().replace(/\s+/g, "_");
+    const config = STATUS_CONFIG[s] || STATUS_CONFIG.pending;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${config.color}`}>
+        <config.icon className="w-3 h-3" />
+        {config.label}
+      </span>
+    );
   };
+
+  const tabItems = [
+    { key: "all", label: "All" },
+    { key: "franchise", label: "Franchise" },
+    { key: "mtop", label: "MTOP" },
+  ];
 
   return (
     <div className="bg-white dark:bg-slate-900 p-6 rounded-lg min-h-screen font-[Montserrat,Arial,sans-serif]">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-            Franchise Permit Processing
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Process and manage franchise/MTOP permit applications
-          </p>
-        </div>
-        <button
-          onClick={fetchApplications}
-          className="flex items-center gap-2 px-4 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#4CAF50]/80 transition"
-        >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <Bus className="w-7 h-7 text-[#4A90E2]" />
+          Franchise Permit Processing
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Review and process franchise/MTOP permit applications</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="bg-[#4CAF50]/10 p-4 rounded-lg border border-[#4CAF50]/20">
-          <p className="text-[#4CAF50] text-sm font-medium">Total</p>
-          <p className="text-[#4CAF50] text-2xl font-bold">{stats.total}</p>
-        </div>
-        <div className="bg-[#4A90E2]/10 p-4 rounded-lg border border-[#4A90E2]/20">
-          <p className="text-[#4A90E2] text-sm font-medium">Approved</p>
-          <p className="text-[#4A90E2] text-2xl font-bold">{stats.approved}</p>
-          <p className="text-[#4A90E2] text-xs mt-1">
-            {stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%
-          </p>
-        </div>
-        <div className="bg-[#E53935]/10 p-4 rounded-lg border border-[#E53935]/20">
-          <p className="text-[#E53935] text-sm font-medium">Rejected</p>
-          <p className="text-[#E53935] text-2xl font-bold">{stats.rejected}</p>
-        </div>
-        <div className="bg-[#FDA811]/10 p-4 rounded-lg border border-[#FDA811]/20">
-          <p className="text-[#FDA811] text-sm font-medium">Pending</p>
-          <p className="text-[#FDA811] text-2xl font-bold">{stats.pending}</p>
-        </div>
-        <div className="bg-[#9C27B0]/10 p-4 rounded-lg border border-[#9C27B0]/20">
-          <p className="text-[#9C27B0] text-sm font-medium">Under Review</p>
-          <p className="text-[#9C27B0] text-2xl font-bold">{stats.under_review}</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        {[
+          { label: "Total", value: stats.total, bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-700 dark:text-blue-300" },
+          { label: "Pending", value: stats.pending, bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-700 dark:text-amber-300" },
+          { label: "Approved", value: stats.approved, bg: "bg-green-50 dark:bg-green-900/20", text: "text-green-700 dark:text-green-300" },
+          { label: "Rejected", value: stats.rejected, bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-700 dark:text-red-300" },
+          { label: "In Process", value: stats.inProcess, bg: "bg-indigo-50 dark:bg-indigo-900/20", text: "text-indigo-700 dark:text-indigo-300" },
+        ].map((card) => (
+          <div key={card.label} className={`${card.bg} rounded-xl p-4`}>
+            <p className={`text-xs font-medium ${card.text} opacity-80`}>{card.label}</p>
+            <p className={`text-2xl font-bold ${card.text}`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-slate-700">
+        {tabItems.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
+              activeTab === tab.key
+                ? "border-[#4CAF50] text-[#4CAF50]"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
-          {[
-            { key: "all", label: "All" },
-            { key: "pending", label: "Pending" },
-            { key: "under_review", label: "Under Review" },
-            { key: "approved", label: "Approved" },
-            { key: "rejected", label: "Rejected" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                activeTab === tab.key
-                  ? "bg-[#4CAF50] text-white shadow"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by name, plate number, TODA, route..."
+            placeholder="Search by name, plate, TODA, route..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50]"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-[#4A90E2] focus:outline-none"
           />
         </div>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-[#4A90E2] focus:outline-none">
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="under_review">Under Review</option>
+          <option value="document_verification">Document Verification</option>
+          <option value="payment_verification">Payment Verification</option>
+        </select>
+        <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-[#4A90E2] focus:outline-none">
+          <option value="latest">Latest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="name_asc">Name A-Z</option>
+        </select>
+        <button onClick={fetchApplications} className="flex items-center gap-2 px-4 py-2.5 bg-[#4A90E2] text-white rounded-xl text-sm font-medium hover:bg-[#3a7bc8] transition">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
       </div>
 
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-8 h-8 text-[#4CAF50] animate-spin" />
-          <span className="ml-3 text-gray-600">Loading applications...</span>
+          <div className="animate-spin w-8 h-8 border-4 border-[#4A90E2] border-t-transparent rounded-full" />
+          <span className="ml-3 text-gray-500">Loading applications...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+          <p className="text-red-600 font-medium">{error}</p>
+          <button onClick={fetchApplications} className="mt-3 text-sm text-[#4A90E2] hover:underline">Try again</button>
         </div>
       ) : filteredApps.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>No applications found.</p>
+        <div className="text-center py-12">
+          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No applications found</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700">
-          <table className="w-full bg-white dark:bg-slate-800">
-            <thead className="bg-gradient-to-r from-[#4CAF50]/10 to-[#4A90E2]/10">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-slate-800">
               <tr>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">App ID</th>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Operator</th>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Plate No.</th>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Type</th>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Route/TODA</th>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Status</th>
-                <th className="px-5 py-4 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">AI Check</th>
-                <th className="px-5 py-4 text-center text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">Actions</th>
+                {["ID", "Applicant", "Vehicle / Plate", "TODA / Route", "Type", "Status", "Date", "Action"].map((h) => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredApps.map((a) => (
-                <tr key={a.application_id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
-                  <td className="px-5 py-4 text-sm font-mono text-gray-900 dark:text-white">
-                    {a.display_id || a.application_id}
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+              {filteredApps.map((app) => (
+                <tr key={app.application_id || app.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                  <td className="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white">#{app.application_id || app.id}</td>
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{app.full_name}</p>
+                    <p className="text-xs text-gray-500">{app.contact_number || ""}</p>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-900 dark:text-white">
-                    {a.full_name || `${a.first_name} ${a.last_name}`}
+                  <td className="px-4 py-3">
+                    <p className="text-sm text-gray-900 dark:text-white">{app.make_brand || ""} {app.model || ""}</p>
+                    <p className="text-xs text-gray-500 font-mono">{app.plate_number || "N/A"}</p>
                   </td>
-                  <td className="px-5 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">
-                    {a.plate_number || "N/A"}
+                  <td className="px-4 py-3">
+                    <p className="text-sm text-gray-900 dark:text-white">{app.toda_name || "N/A"}</p>
+                    <p className="text-xs text-gray-500">{app.route_zone || ""}</p>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                      {a.permit_subtype || a.permit_type || "N/A"}
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">
+                      {app.permit_type || "NEW"} / {app.permit_subtype || "FRANCHISE"}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {a.route_zone || "—"} {a.toda_name ? `(${a.toda_name})` : ""}
-                  </td>
-                  <td className="px-5 py-4 text-sm">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadge(a.status)}`}>
-                      {(a.status || "pending").replace("_", " ")}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-sm">
-                    <AIVerificationBadge status={getAIVerificationStatus(a)} />
-                  </td>
-                  <td className="px-5 py-4 text-sm text-center relative" ref={actionsOpen === a.application_id ? dropdownRef : null}>
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => viewApplication(a)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-[#4CAF50] hover:bg-[#FDA811] transition-all shadow-sm"
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1" /> View
-                      </button>
-                      <button
-                        onClick={() => setActionsOpen(actionsOpen === a.application_id ? null : a.application_id)}
-                        className="inline-flex items-center p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Quick Actions Dropdown - Franchise specific */}
-                    {actionsOpen === a.application_id && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 z-50">
-                        <div className="py-1">
-                          <button
-                            onClick={() => handleQuickAction(a, "view")}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700"
-                          >
-                            <Car className="w-4 h-4 text-blue-500" /> Inspect Vehicle
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(a, "view")}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700"
-                          >
-                            <Route className="w-4 h-4 text-purple-500" /> Verify Route
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(a, "view")}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700"
-                          >
-                            <Clipboard className="w-4 h-4 text-orange-500" /> Check LTO Docs
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(a, "review")}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                          >
-                            <ScanSearch className="w-4 h-4" /> Set Under Review
-                          </button>
-                          <hr className="my-1 border-gray-200 dark:border-slate-700" />
-                          <button
-                            onClick={() => handleQuickAction(a, "approve")}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                          >
-                            <CheckCircle className="w-4 h-4" /> Approve Franchise
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(a, "reject")}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            <XCircle className="w-4 h-4" /> Reject Application
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                  <td className="px-4 py-3">{getStatusBadge(app.status)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(app.created_at)}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => { setSelectedApp(app); setNote(""); }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#4A90E2] text-white text-xs font-medium rounded-lg hover:bg-[#3a7bc8] transition"
+                    >
+                      <Eye className="w-3 h-3" /> Review
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -519,389 +336,121 @@ export default function FranchiseProcessing() {
         </div>
       )}
 
-      {/* ───────── DETAIL MODAL ───────── */}
+      {/* Detail / Review Modal */}
       {selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 overflow-auto animate-fadeIn">
-          <div className="w-full max-w-7xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl transform transition-all">
-            {/* Modal Header */}
-            <div className="relative p-6 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 border-b-4 border-[#FDA811]">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="bg-gradient-to-br from-[#FDA811] to-[#FDA811]/80 p-3 rounded-2xl shadow-xl">
-                    <Car className="w-10 h-10 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Franchise Permit Application</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {selectedApp.permit_type} - {selectedApp.permit_subtype || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedApp(null)}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-all"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Info Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-blue-500">
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">Application ID</p>
-                  <p className="text-lg font-bold text-gray-800 dark:text-white font-mono">
-                    {selectedApp.display_id || selectedApp.application_id}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-purple-500">
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">Date Submitted</p>
-                  <p className="text-lg font-bold text-gray-800 dark:text-white">
-                    {selectedApp.date_submitted_formatted || "N/A"}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-green-500">
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">Status</p>
-                  <span className={`inline-block px-3 py-1 text-sm font-bold rounded-full capitalize ${getStatusBadge(selectedApp.status)}`}>
-                    {(selectedApp.status || "pending").replace("_", " ")}
-                  </span>
-                </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border-l-4 border-emerald-500">
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">AI Document Check</p>
-                  <AIVerificationBadge status={getAIVerificationStatus(selectedApp)} />
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Bus className="w-5 h-5 text-[#4A90E2]" />
+                Application #{selectedApp.application_id || selectedApp.id}
+              </h2>
+              <button onClick={() => setSelectedApp(null)} className="text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
             </div>
+            <div className="p-6 space-y-5">
+              {/* Status */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">Current Status:</span>
+                {getStatusBadge(selectedApp.status)}
+              </div>
 
-            {/* Modal Body */}
-            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto bg-gradient-to-b from-gray-50 to-white dark:from-slate-900 dark:to-slate-800">
-
-              {/* AI Verification Details */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-emerald-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-xl shadow-lg">
-                    <Bot className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">AI Document Verification</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className={`p-4 rounded-xl border-2 ${selectedApp.plate_number && selectedApp.engine_number && selectedApp.chassis_number ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {selectedApp.plate_number && selectedApp.engine_number ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      )}
-                      <span className="text-sm font-semibold">Vehicle Registration</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      {selectedApp.plate_number
-                        ? `Plate: ${selectedApp.plate_number} | Engine: ${selectedApp.engine_number || "Missing"}`
-                        : "Vehicle registration data incomplete"}
-                    </p>
-                  </div>
-                  <div className={`p-4 rounded-xl border-2 ${selectedApp.lto_or_number && selectedApp.lto_cr_number ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {selectedApp.lto_or_number && selectedApp.lto_cr_number ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 text-amber-600" />
-                      )}
-                      <span className="text-sm font-semibold">LTO Documents</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      {selectedApp.lto_or_number
-                        ? `OR: ${selectedApp.lto_or_number} | CR: ${selectedApp.lto_cr_number || "Missing"}`
-                        : "LTO documents not verified"}
-                    </p>
-                  </div>
-                  <div className={`p-4 rounded-xl border-2 ${selectedApp.route_zone && selectedApp.toda_name ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {selectedApp.route_zone && selectedApp.toda_name ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 text-amber-600" />
-                      )}
-                      <span className="text-sm font-semibold">Route/TODA Validation</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      {selectedApp.route_zone
-                        ? `Route: ${selectedApp.route_zone} | TODA: ${selectedApp.toda_name || "N/A"}`
-                        : "Route/TODA information incomplete"}
-                    </p>
-                  </div>
+              {/* Applicant Info */}
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4" /> Applicant Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-gray-500">Name:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.full_name}</span></div>
+                  <div><span className="text-gray-500">Email:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.email || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Contact:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.contact_number || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Address:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.home_address || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Operator Type:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.operator_type || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Citizenship:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.citizenship || "N/A"}</span></div>
                 </div>
               </div>
 
-              {/* Processing Steps */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-indigo-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-xl shadow-lg">
-                    <ClipboardCheck className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Processing Checklist</h3>
-                  <span className="ml-auto text-sm text-gray-500">
-                    {Object.values(processingSteps).filter(Boolean).length}/{PROCESSING_STEPS.length} completed
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {PROCESSING_STEPS.map((step) => (
-                    <button
-                      key={step.key}
-                      onClick={() => toggleStep(step.key)}
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                        processingSteps[step.key]
-                          ? "border-green-300 bg-green-50 dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-slate-700 hover:border-gray-300"
-                      }`}
-                    >
-                      <div
-                        className="p-2 rounded-lg"
-                        style={{ backgroundColor: processingSteps[step.key] ? "#4CAF50" : step.color + "20" }}
-                      >
-                        <step.icon
-                          className="w-5 h-5"
-                          style={{ color: processingSteps[step.key] ? "#fff" : step.color }}
-                        />
-                      </div>
-                      <div className="text-left flex-1">
-                        <p className={`text-sm font-semibold ${processingSteps[step.key] ? "text-green-700" : "text-gray-700 dark:text-gray-300"}`}>
-                          {step.label}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {processingSteps[step.key] ? "Completed" : "Click to mark as done"}
-                        </p>
-                      </div>
-                      {processingSteps[step.key] && <CheckCircle className="w-5 h-5 text-green-500" />}
-                    </button>
-                  ))}
+              {/* Vehicle Info */}
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <Car className="w-4 h-4" /> Vehicle Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-gray-500">Make/Brand:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.make_brand || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Model:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.model || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Plate Number:</span> <span className="font-medium text-gray-900 dark:text-white font-mono">{selectedApp.plate_number || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Color:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.color || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Year Acquired:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.year_acquired || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Vehicle Type:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.vehicle_type || "Tricycle"}</span></div>
+                  <div><span className="text-gray-500">Engine No:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.engine_number || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Chassis No:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.chassis_number || "N/A"}</span></div>
                 </div>
               </div>
 
-              {/* Operator Information */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-blue-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Operator Information</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-slate-700 dark:to-slate-600 p-4 rounded-xl">
-                    <label className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Full Name</label>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white mt-2">
-                      {selectedApp.first_name} {selectedApp.middle_initial || ""} {selectedApp.last_name}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Operator Type</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.operator_type || "N/A"}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Email</label>
-                      <p className="text-gray-900 dark:text-white">{selectedApp.email || "N/A"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Contact</label>
-                      <p className="text-gray-900 dark:text-white">{selectedApp.contact_number || "N/A"}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Address</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.home_address || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Citizenship</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.citizenship || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Birth Date</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.birth_date_formatted || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">ID Type / Number</label>
-                    <p className="text-gray-900 dark:text-white mt-1">
-                      {selectedApp.id_type || "N/A"} — {selectedApp.id_number || "N/A"}
-                    </p>
-                  </div>
+              {/* Route Info */}
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Route & Franchise Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-gray-500">TODA Name:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.toda_name || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Route/Zone:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.route_zone || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Barangay:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.barangay_of_operation || "N/A"}</span></div>
+                  <div><span className="text-gray-500">District:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.district || "N/A"}</span></div>
+                  <div><span className="text-gray-500">Permit Type:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.permit_type || "NEW"}</span></div>
+                  <div><span className="text-gray-500">Subtype:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.permit_subtype || "FRANCHISE"}</span></div>
                 </div>
               </div>
 
-              {/* Vehicle Information */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-purple-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                    <Car className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Vehicle Information</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-slate-700 dark:to-slate-600 p-4 rounded-xl">
-                    <label className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Plate Number</label>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white mt-2 font-mono">
-                      {selectedApp.plate_number || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Make/Brand</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.make_brand || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Model</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.model || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Engine Number</label>
-                    <p className="text-gray-900 dark:text-white mt-1 font-mono">{selectedApp.engine_number || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Chassis Number</label>
-                    <p className="text-gray-900 dark:text-white mt-1 font-mono">{selectedApp.chassis_number || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Vehicle Type / Color</label>
-                    <p className="text-gray-900 dark:text-white mt-1">
-                      {selectedApp.vehicle_type || "N/A"} — {selectedApp.color || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Year Acquired</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.year_acquired || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">MV File Number</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.mv_file_number || "N/A"}</p>
-                  </div>
+              {/* LTO Info */}
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> LTO & Registration
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-gray-500">LTO OR No:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.lto_or_number || "N/A"}</span></div>
+                  <div><span className="text-gray-500">LTO CR No:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.lto_cr_number || "N/A"}</span></div>
+                  <div><span className="text-gray-500">MV File No:</span> <span className="font-medium text-gray-900 dark:text-white">{selectedApp.mv_file_number || "N/A"}</span></div>
+                  <div><span className="text-gray-500">LTO Expiry:</span> <span className="font-medium text-gray-900 dark:text-white">{formatDate(selectedApp.lto_expiration_date)}</span></div>
                 </div>
               </div>
 
-              {/* LTO & Route Information */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-green-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-lg">
-                    <Route className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">LTO & Route Details</h3>
+              {/* Existing Remarks */}
+              {selectedApp.remarks && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                  <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2">Previous Remarks</h3>
+                  <pre className="text-xs text-amber-700 dark:text-amber-400 whitespace-pre-wrap font-sans">{selectedApp.remarks}</pre>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">LTO OR Number</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.lto_or_number || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">LTO CR Number</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.lto_cr_number || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">LTO Expiration Date</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.lto_expiration_date_formatted || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">District</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.district || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Route/Zone</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.route_zone || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">TODA Name</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.toda_name || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Barangay of Operation</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.barangay_of_operation || "N/A"}</p>
-                  </div>
-                </div>
+              )}
+
+              {/* Admin Notes */}
+              <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Admin Notes / Remarks</h3>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={3}
+                  className="w-full border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-sm bg-white dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-[#4A90E2] focus:outline-none"
+                  placeholder="Add processing remarks..."
+                />
               </div>
 
-              {/* Fees Information */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-cyan-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 p-3 rounded-xl shadow-lg">
-                    <FileText className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Fees & Payments</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Franchise Fee OR</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.franchise_fee_or || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Sticker/ID Fee OR</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.sticker_id_fee_or || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Inspection Fee OR</label>
-                    <p className="text-gray-900 dark:text-white mt-1">{selectedApp.inspection_fee_or || "N/A"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Admin Action */}
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-2 border-yellow-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-3 rounded-xl shadow-lg">
-                    <AlertCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Admin Action</h3>
-                </div>
-
-                {/* Previous Remarks */}
-                {selectedApp.remarks && (
-                  <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                    <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">Previous Remarks</p>
-                    <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans">
-                      {selectedApp.remarks}
-                    </pre>
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Add Review Notes
-                  </label>
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-3 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent"
-                    rows={3}
-                    placeholder="Add remarks or notes..."
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-slate-700 mt-6">
-                  <button
-                    onClick={() => updateStatus("pending")}
-                    className="px-6 py-3 bg-[#FDA811] text-white rounded-lg hover:bg-[#FDA811]/80 transition-colors font-medium"
-                  >
-                    Set Pending
-                  </button>
-                  <button
-                    onClick={() => updateStatus("under_review")}
-                    className="px-6 py-3 bg-[#4A90E2] text-white rounded-lg hover:bg-[#4A90E2]/80 transition-colors font-medium"
-                  >
-                    Under Review
-                  </button>
-                  <button
-                    onClick={() => updateStatus("rejected")}
-                    className="px-6 py-3 bg-[#E53935] text-white rounded-lg hover:bg-[#E53935]/80 transition-colors font-medium"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => updateStatus("approved")}
-                    className="px-6 py-3 bg-[#4CAF50] text-white rounded-lg hover:bg-[#4CAF50]/80 transition-all font-medium shadow-sm"
-                  >
-                    Approve Franchise
-                  </button>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button onClick={() => handleStatusAction("Approved")} className="flex items-center gap-2 px-5 py-2.5 bg-[#4CAF50] text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+                  <CheckCircle className="w-4 h-4" /> Approve
+                </button>
+                <button onClick={() => handleStatusAction("Rejected")} className="flex items-center gap-2 px-5 py-2.5 bg-[#E53935] text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition">
+                  <XCircle className="w-4 h-4" /> Reject
+                </button>
+                <button onClick={() => handleStatusAction("Under Review")} className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+                  <Eye className="w-4 h-4" /> Under Review
+                </button>
+                <button onClick={() => handleStatusAction("Pending")} className="flex items-center gap-2 px-5 py-2.5 bg-[#FDA811] text-white rounded-xl text-sm font-semibold hover:bg-amber-600 transition">
+                  <Clock className="w-4 h-4" /> Set Pending
+                </button>
+                <button onClick={() => setSelectedApp(null)} className="ml-auto px-5 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-800 transition">
+                  Close
+                </button>
               </div>
             </div>
           </div>

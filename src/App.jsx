@@ -19,6 +19,7 @@ import BuildingNew from "./pages/user/BuildingPermit/BuildingNew"
 import BuildingPermitType from "./pages/user/BuildingPermit/BuildingPermitType"
 import RenewalBuilding from "./pages/user/BuildingPermit/RenewalBuilding"
 import AncillaryPermits from "./pages/user/BuildingPermit/Ancillary/Ancillary"
+import OccupancyPermit from "./pages/user/BuildingPermit/OccupancyPermit"
 import ProfessionalRegistration from "./pages/user/BuildingPermit/ProfessionalRegistration"
 import FranchisePermitType from "./pages/user/FranchisePermit/FranchisePermitType"
 import FranchiseNew from "./pages/user/FranchisePermit/FranchiseNew"
@@ -44,11 +45,15 @@ import Professionals from "./pages/admin/BuildingPermit/Professionals";
 
 import Franchise from "./pages/admin/FranchisePermit/Franchise";
 import FranchisePermitApplication from "./pages/admin/FranchisePermit/FranchisePermitApplication";
-import FranchiseProcessing from "./pages/admin/FranchisePermit/FranchiseProcessing"; 
+import FranchiseProcessing from "./pages/admin/FranchisePermit/FranchiseProcessing";
 
 import BarangayPermitAnalytics from "./pages/admin/BarangayPermit/Barangay";
 import BrgyPermitApplication from "./pages/admin/BarangayPermit/BrgyPermitApplication";
 import BarangayProcessing from "./pages/admin/BarangayPermit/BarangayProcessing";
+
+import RequirementsChecklist from "./pages/admin/RequirementsChecklist/RequirementsChecklist";
+import Reports from "./pages/admin/Reports/Reports";
+import IssuedPermits from "./pages/admin/IssuedPermits/IssuedPermits";
 
 import Tracker from "./pages/admin/PermitTracker/Tracker";
 import AuditTrail from "./pages/admin/AuditTrail/AuditTrail";
@@ -99,6 +104,7 @@ function App() {
           <Route path="building/type" element={<BuildingPermitType />} />
           <Route path="building/renewal" element={<RenewalBuilding />} />
           <Route path="building/ancillary" element={<AncillaryPermits />} />
+          <Route path="building/occupancy" element={<OccupancyPermit />} />
           <Route path="building/professional" element={<ProfessionalRegistration />} />
 
           {/* Franchise routes */}
@@ -207,7 +213,6 @@ function App() {
               </ProtectedRoute>
             } 
           />
-
           <Route 
             path="franchiseprocessing" 
             element={
@@ -216,7 +221,6 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          
 
  <Route 
   path="brgydashboard" 
@@ -235,16 +239,41 @@ function App() {
     </ProtectedRoute>
   } 
 />
-
 <Route 
   path="brgyprocessing" 
   element={
     <ProtectedRoute requiredRole="admin" allowedDepartments={['barangay','super']}>
-      <BarangayProcessing />  {/* Clearance processing component */}
+      <BarangayProcessing />
     </ProtectedRoute>
   } 
 />
-          
+
+          <Route 
+            path="requirements" 
+            element={
+              <ProtectedRoute requiredRole="admin" allowedDepartments={['business', 'building', 'transport', 'barangay', 'super']}>
+                <RequirementsChecklist />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="reports" 
+            element={
+              <ProtectedRoute requiredRole="admin" allowedDepartments={['super']}>
+                <Reports />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="issuedpermits" 
+            element={
+              <ProtectedRoute requiredRole="admin" allowedDepartments={['business', 'building', 'transport', 'barangay', 'super']}>
+                <IssuedPermits />
+              </ProtectedRoute>
+            } 
+          />
 
           <Route 
             path="permittracker" 

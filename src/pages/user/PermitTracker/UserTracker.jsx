@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Eye, Download, Calendar, FileText, X, CheckCircle, Clock, Upload, 
   Check, Loader2, Building, Home, Briefcase, Building2, RefreshCw, Filter,
-  ChevronUp, ChevronDown, FileDown, TrendingUp, AlertCircle, ArrowUpDown
+  ChevronUp, ChevronDown, FileDown, TrendingUp, AlertCircle, ArrowUpDown,
+  FileType, Printer
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import Swal from "sweetalert2";
+import { generatePermitPDF } from "../../../utils/permitPdfGenerator";
 
 export default function PermitTracker() {
   const [tracking, setTracking] = useState([]);
@@ -236,246 +238,30 @@ export default function PermitTracker() {
     setShowModal(true);
   };
 
+  const [downloading, setDownloading] = useState(false);
+
   const downloadPermit = async (permit) => {
     if (permit.status !== "Approved") {
       Swal.fire({
         icon: 'warning',
         title: 'Cannot Download',
-        text: 'Permit can only be downloaded when approved and claimed.',
+        text: 'Permit can only be downloaded when approved.',
         confirmButtonColor: '#4A90E2'
       });
       return;
     }
 
     try {
-      // Generate realistic HTML permit document
-      const permitHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Official Permit - ${permit.id}</title>
-  <style>
-    @page { margin: 0; }
-    body {
-      font-family: 'Times New Roman', serif;
-      margin: 0;
-      padding: 40px;
-      background: white;
-    }
-    .permit-container {
-      max-width: 800px;
-      margin: 0 auto;
-      border: 3px double #000;
-      padding: 30px;
-      position: relative;
-    }
-    .header {
-      text-align: center;
-      border-bottom: 2px solid #000;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    .seal {
-      width: 100px;
-      height: 100px;
-      border: 3px solid #000;
-      border-radius: 50%;
-      margin: 0 auto 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 12px;
-    }
-    .title {
-      font-size: 28px;
-      font-weight: bold;
-      margin: 10px 0;
-      text-transform: uppercase;
-    }
-    .subtitle {
-      font-size: 16px;
-      color: #333;
-    }
-    .permit-number {
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      margin: 20px 0;
-      color: #c00;
-    }
-    .section {
-      margin: 20px 0;
-    }
-    .section-title {
-      font-weight: bold;
-      font-size: 14px;
-      border-bottom: 1px solid #000;
-      padding-bottom: 5px;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-    }
-    .info-row {
-      display: flex;
-      margin: 8px 0;
-      font-size: 13px;
-    }
-    .info-label {
-      font-weight: bold;
-      width: 200px;
-      flex-shrink: 0;
-    }
-    .info-value {
-      flex: 1;
-    }
-    .footer {
-      margin-top: 40px;
-      border-top: 2px solid #000;
-      padding-top: 20px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .signature-box {
-      text-align: center;
-      width: 200px;
-    }
-    .signature-line {
-      border-top: 1px solid #000;
-      margin-top: 60px;
-      padding-top: 5px;
-      font-size: 11px;
-    }
-    .watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-45deg);
-      font-size: 80px;
-      color: rgba(0, 128, 0, 0.1);
-      font-weight: bold;
-      z-index: -1;
-      pointer-events: none;
-    }
-    .notice {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f9f9f9;
-      border-left: 4px solid #000;
-      font-size: 11px;
-    }
-  </style>
-</head>
-<body>
-  <div class="permit-container">
-    <div class="watermark">OFFICIAL</div>
-    
-    <div class="header">
-      <div class="seal">CALOOCAN CITY<br/>SEAL</div>
-      <div class="title">Republic of the Philippines</div>
-      <div class="subtitle">City of Caloocan</div>
-      <div class="subtitle" style="margin-top: 10px; font-size: 18px; font-weight: bold;">OFFICE OF THE MAYOR</div>
-    </div>
+      setDownloading(true);
+      const filename = await generatePermitPDF(permit);
 
-    <div class="permit-number">PERMIT NO. ${permit.id}</div>
-
-    <div style="text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0;">
-      ${permit.permitType?.toUpperCase() || 'PERMIT'}
-    </div>
-
-    <div class="section">
-      <div class="section-title">Permit Details</div>
-      <div class="info-row">
-        <div class="info-label">Application Type:</div>
-        <div class="info-value">${permit.application_type || 'N/A'}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Date Issued:</div>
-        <div class="info-value">${formatDate(permit.approvedDate)}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Valid Until:</div>
-        <div class="info-value">${formatDate(permit.expirationDate)}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Status:</div>
-        <div class="info-value" style="color: green; font-weight: bold;">${permit.status}</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Permitee Information</div>
-      <div class="info-row">
-        <div class="info-label">Name:</div>
-        <div class="info-value">${permit.applicantName || 'N/A'}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Business/Establishment:</div>
-        <div class="info-value">${permit.businessName || 'N/A'}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Address:</div>
-        <div class="info-value">${permit.address || 'N/A'}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Contact Number:</div>
-        <div class="info-value">${permit.contactNumber || 'N/A'}</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Financial Details</div>
-      <div class="info-row">
-        <div class="info-label">Fees Paid:</div>
-        <div class="info-value">${permit.fees || 'PHP 0.00'}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Receipt Number:</div>
-        <div class="info-value">${permit.receiptNumber || 'N/A'}</div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="signature-box">
-        <div class="signature-line">Approved By</div>
-      </div>
-      <div class="signature-box">
-        <div class="signature-line">City Mayor</div>
-      </div>
-    </div>
-
-    <div class="notice">
-      <strong>IMPORTANT NOTICE:</strong><br/>
-      This permit is not transferable and must be displayed in a conspicuous place. 
-      Any violation of the terms and conditions may result in revocation of this permit.
-      For verification, please visit our office or check online at e-plms.caloocan.gov.ph
-      <br/><br/>
-      <strong>Document Generated:</strong> ${new Date().toLocaleString()}<br/>
-      <strong>Document ID:</strong> ${permit.id}-${Date.now()}
-    </div>
-  </div>
-</body>
-</html>
-      `;
-
-      // Create blob and download
-      const blob = new Blob([permitHTML], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Official-Permit-${permit.id}-${permit.permitType?.replace(/\s+/g, '-')}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      // Show success notification
       Swal.fire({
         icon: 'success',
-        title: 'Download Complete!',
+        title: 'PDF Downloaded!',
         html: `
-          <p>Your official permit <strong>${permit.id}</strong> has been downloaded.</p>
-          <p class="text-sm text-gray-600 mt-2">Open the HTML file in your browser to view and print your permit.</p>
+          <p>Your unofficial digital copy of <strong>${permit.permitType}</strong> (${permit.id}) has been downloaded as PDF.</p>
+          <p class="text-sm text-gray-600 mt-2">File: <strong>${filename}</strong></p>
+          <p class="text-xs text-gray-400 mt-1">This is a digital copy. For the official permit, please visit the respective office.</p>
         `,
         confirmButtonColor: '#4CAF50'
       });
@@ -484,9 +270,11 @@ export default function PermitTracker() {
       Swal.fire({
         icon: 'error',
         title: 'Download Failed',
-        text: error.message || 'Unable to download permit. Please try again.',
+        text: error.message || 'Unable to generate PDF. Please try again.',
         confirmButtonColor: '#E53935'
       });
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -1225,6 +1013,43 @@ export default function PermitTracker() {
                 </div>
               )}
 
+              {/* Download Digital Copy Section - Only for Approved */}
+              {selectedPermit.status === 'Approved' && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-300 dark:border-green-700">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-14 h-14 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center">
+                      <FileType className="w-7 h-7 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-green-800 dark:text-green-300 text-lg mb-1">
+                        Your Permit Has Been Approved!
+                      </h3>
+                      <p className="text-sm text-green-700 dark:text-green-400 mb-4">
+                        Download your unofficial digital copy as a PDF document. This includes your complete
+                        applicant and application details customized for your <strong>{selectedPermit.permitType}</strong>.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => downloadPermit(selectedPermit)}
+                          disabled={downloading}
+                          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                        >
+                          {downloading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Download className="w-5 h-5" />
+                          )}
+                          {downloading ? 'Generating PDF...' : 'Download PDF Permit'}
+                        </button>
+                      </div>
+                      <p className="text-xs text-green-600/70 dark:text-green-500/70 mt-3">
+                        This is a system-generated digital copy with a "DIGITAL COPY" watermark. For the official/physical permit, please visit the respective office.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Additional Information */}
               {Object.keys(selectedPermit).filter(key => 
                 !['id', 'permitType', 'application_type', 'status', 'applicantName', 'businessName', 
@@ -1263,15 +1088,21 @@ export default function PermitTracker() {
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => downloadPermit(selectedPermit)}
+                  disabled={selectedPermit.status !== 'Approved' || downloading}
                   className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                     selectedPermit.status === 'Approved'
                       ? 'bg-[#4CAF50] hover:bg-[#43A047] text-white'
                       : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-400 cursor-not-allowed'
                   }`}
-                  disabled={selectedPermit.status !== 'Approved'}
                 >
-                  <Download className="w-5 h-5" />
-                  {selectedPermit.status === 'Approved' ? 'Download Official Permit' : 'Download (Available when Approved)'}
+                  {downloading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  {selectedPermit.status === 'Approved'
+                    ? (downloading ? 'Generating PDF...' : 'Download PDF Permit')
+                    : 'Download (Available when Approved)'}
                 </button>
                 <button
                   onClick={() => setShowModal(false)}

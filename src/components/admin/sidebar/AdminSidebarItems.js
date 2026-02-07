@@ -11,9 +11,10 @@ import {
   ShieldCheck,
   GraduationCap,
   Activity,
-  Settings,
-  Truck,
+  Settings2,
+  PieChart,
   ClipboardCheck,
+  FileCheck,
 } from "lucide-react";
 
 const AdminSidebarItems = [
@@ -68,7 +69,7 @@ const AdminSidebarItems = [
   {
     id: "buildingProcessing",
     label: "Building Processing",
-    icon: Settings,
+    icon: Settings2,
     path: "/admin/buildingprocessing",
     department: ["building", "super"],
   },
@@ -97,7 +98,7 @@ const AdminSidebarItems = [
   {
     id: "franchiseProcessing",
     label: "Franchise Processing",
-    icon: Truck,
+    icon: Settings2,
     path: "/admin/franchiseprocessing",
     department: ["transport", "super"],
   },
@@ -119,9 +120,36 @@ const AdminSidebarItems = [
   {
     id: "brgyProcessing",
     label: "Clearance Processing",
-    icon: ClipboardCheck,
+    icon: Settings2,
     path: "/admin/brgyprocessing",
     department: ["barangay", "super"],
+  },
+
+  // ISSUED PERMITS (All departments + Super)
+  {
+    id: "issuedPermits",
+    label: "Issued Permits",
+    icon: FileCheck,
+    path: "/admin/issuedpermits",
+    department: ["business", "building", "transport", "barangay", "super"],
+  },
+
+  // REQUIREMENTS CHECKLIST (All departments + Super)
+  {
+    id: "requirementsChecklist",
+    label: "Requirements Checklist",
+    icon: ClipboardCheck,
+    path: "/admin/requirements",
+    department: ["business", "building", "transport", "barangay", "super"],
+  },
+
+  // REPORTS (Super Admin only)
+  {
+    id: "reports",
+    label: "Reports & Analytics",
+    icon: PieChart,
+    path: "/admin/reports",
+    department: ["super"],
   },
 
   // AUDIT TRAIL (Super Admin only)
