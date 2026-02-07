@@ -15,7 +15,8 @@ import {
   File,
   Receipt,
   AlertCircle,
-  Building2
+  Building2,
+  Download
 } from "lucide-react";
 
 const API_BUSINESS = "/backend/business_permit";
@@ -377,7 +378,7 @@ export default function BusPermitApplication() {
       setError(null);
       
       const statusParam = activeTab !== 'all' ? activeTab.toUpperCase() : null;
-      const url = new URL(`${API_BUSINESS}/admin_fetch.php`);
+      const url = new URL(`${API_BUSINESS}/admin_fetch.php`, window.location.origin);
       if (statusParam) url.searchParams.append('status', statusParam);
       if (searchQuery) url.searchParams.append('search', searchQuery);
       if (sortOption) url.searchParams.append('sort_by', sortOption);

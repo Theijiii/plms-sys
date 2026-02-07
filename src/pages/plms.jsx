@@ -291,7 +291,7 @@ export default function LandingPage() {
                 Our Services
               </h2>
               <p className="text-gray-700 text-sm md:text-base">
-                Comprehensive digital solutions for all your permit needs
+                HI BROOOOOOOOOOOOOOOOO
               </p>
             </div>
 

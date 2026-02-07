@@ -361,24 +361,16 @@ try {
     }
     
     // === FIXED BINDING SECTION ===
-    // Bind parameters safely without reference issues
+    // Bind parameters safely with proper references
     if (!empty($values)) {
-        // Create individual variables for each value
-        $bindValues = [];
-        foreach ($values as $index => $value) {
-            $bindValues[] = $value;
-        }
-        
-        // Build the bind_param call with proper references
+        // Build array with type string first, then references to all values
         $bindParams = [$types];
-        foreach ($bindValues as $key => $value) {
-            $bindParams[] = &$bindValues[$key];
+        foreach ($values as $key => $value) {
+            $bindParams[] = &$values[$key];
         }
         
-        // Use reflection to call bind_param dynamically
-        $reflection = new ReflectionClass('mysqli_stmt');
-        $method = $reflection->getMethod('bind_param');
-        if (!$method->invokeArgs($stmt, $bindParams)) {
+        // Use call_user_func_array to call bind_param with references
+        if (!call_user_func_array([$stmt, 'bind_param'], $bindParams)) {
             throw new Exception("Bind parameters failed");
         }
     }
@@ -431,6 +423,7 @@ try {
     $firstName = $postData['first_name'] ?? '';
     $barangayValue = $postData['barangay'] ?? '';
     $contactNumber = $postData['contact_number'] ?? '';
+    $permitType = $postData['permit_type'] ?? 'NEW';
     
     $overviewSql = "INSERT INTO application_overview 
                     (permit_id, applicant_id, application_date, permit_type, status, 
@@ -444,7 +437,7 @@ try {
             $permit_id, 
             $applicant_id, 
             $application_date, 
-            ($postData['permit_type'] ?? 'NEW'), 
+            $permitType, 
             $status,
             $businessName,
             $lastName,
