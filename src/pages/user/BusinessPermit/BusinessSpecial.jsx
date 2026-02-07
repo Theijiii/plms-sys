@@ -39,6 +39,13 @@ export default function BusinessSpecialPermitApplication() {
     return new Date().toISOString().split('T')[0];
   };
 
+  // Get tomorrow's date for minimum date selection
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
   // Get applicant_id from localStorage on component mount
   useEffect(() => {
     const id = localStorage.getItem('userId') || 
@@ -158,6 +165,15 @@ export default function BusinessSpecialPermitApplication() {
       if (!formData.special_permit_type) newErrors.special_permit_type = 'Permit type is required';
       if (!formData.event_date_start) newErrors.event_date_start = 'Start date is required';
       if (!formData.event_date_end) newErrors.event_date_end = 'End date is required';
+      if (formData.event_date_start && formData.event_date_start < getTomorrowDate()) {
+        newErrors.event_date_start = 'Start date must be in the future';
+      }
+      if (formData.event_date_end && formData.event_date_end < getTomorrowDate()) {
+        newErrors.event_date_end = 'End date must be in the future';
+      }
+      if (formData.event_date_start && formData.event_date_end && formData.event_date_end < formData.event_date_start) {
+        newErrors.event_date_end = 'End date must be after start date';
+      }
       if (!formData.event_location.trim()) newErrors.event_location = 'Location is required';
     }
     
@@ -762,6 +778,7 @@ export default function BusinessSpecialPermitApplication() {
                   name="event_date_start"
                   value={formData.event_date_start}
                   onChange={handleChange}
+                  min={getTomorrowDate()}
                   className={`w-full p-3 border border-black rounded-lg ${errors.event_date_start ? 'border-red-500' : ''}`}
                   style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
                 />
@@ -777,6 +794,7 @@ export default function BusinessSpecialPermitApplication() {
                   name="event_date_end"
                   value={formData.event_date_end}
                   onChange={handleChange}
+                  min={formData.event_date_start || getTomorrowDate()}
                   className={`w-full p-3 border border-black rounded-lg ${errors.event_date_end ? 'border-red-500' : ''}`}
                   style={{ color: COLORS.secondary, fontFamily: COLORS.font }}
                 />
@@ -1122,7 +1140,7 @@ export default function BusinessSpecialPermitApplication() {
 
       {/* File Preview Modal */}
       {showPreview.url && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div 
             className="rounded-lg shadow-lg w-full max-w-4xl border border-gray-200 overflow-hidden"
             style={{ 
@@ -1196,7 +1214,7 @@ export default function BusinessSpecialPermitApplication() {
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div 
             className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
             style={{ 
@@ -1273,7 +1291,7 @@ export default function BusinessSpecialPermitApplication() {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div 
             className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
             style={{ 
@@ -1319,7 +1337,7 @@ export default function BusinessSpecialPermitApplication() {
 
       {/* Error Modal */}
       {showErrorModal && (
-        <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm z-50 p-4">
           <div 
             className="p-8 rounded-lg shadow-lg w-full max-w-lg border border-gray-200"
             style={{ 
