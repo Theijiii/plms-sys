@@ -78,7 +78,19 @@ export default function PermitTracker() {
       console.log('[PermitTracker] API response:', { total: data.total, appCount: data.applications?.length, email: data.user_email, userId: data.user_id });
 
       if (data.success) {
-        setTracking(data.applications || []);
+        const normalizeStatus = (s) => {
+          if (!s) return 'Pending';
+          const lower = s.trim().toLowerCase();
+          if (lower === 'approved') return 'Approved';
+          if (lower === 'rejected') return 'Rejected';
+          if (lower === 'for compliance') return 'For Compliance';
+          return 'Pending';
+        };
+        const apps = (data.applications || []).map(app => ({
+          ...app,
+          status: normalizeStatus(app.status)
+        }));
+        setTracking(apps);
       } else {
         setError(data.message || "Failed to fetch applications");
       }

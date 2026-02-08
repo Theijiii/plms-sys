@@ -149,13 +149,15 @@ export default function BuildingNew() {
         body: submitData,
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const serverMsg = data?.message || `HTTP error! status: ${response.status}`;
+        console.error('Server error:', serverMsg);
+        throw new Error(serverMsg);
       }
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (data && data.success) {
         try { logPermitSubmission("Building Permit", data.data?.application_id || "", { permit_type: "New" }); } catch(e) { console.warn('Activity log failed:', e); }
         Swal.fire({
           icon: 'success',
@@ -171,7 +173,7 @@ export default function BuildingNew() {
         Swal.fire({
           icon: 'error',
           title: 'Submission Failed',
-          text: data.message || 'Failed to submit application. Please try again.',
+          text: data?.message || 'Failed to submit application. Please try again.',
           confirmButtonColor: '#E53935'
         });
       }
@@ -179,8 +181,8 @@ export default function BuildingNew() {
       console.error('Submit error:', err);
       Swal.fire({
         icon: 'error',
-        title: 'Network Error',
-        text: 'Could not connect to the server. Please check your connection and try again.',
+        title: 'Submission Error',
+        text: err.message || 'Could not connect to the server. Please check your connection and try again.',
         confirmButtonColor: '#E53935'
       });
     } finally {

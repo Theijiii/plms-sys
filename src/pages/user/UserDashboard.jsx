@@ -110,28 +110,28 @@ const SERVICES = [
   },
   {
     id: 3,
-    name: "BUILDING & CONSTRUCTION PERMIT",
-    description: "Comprehensive building permit system with architectural review and safety compliance checks.",
-    shortDescription: "Construction permits and safety compliance",
-    icon: <Building2 className="w-10 h-10" />,
-    path: "/user/building/type",
+    name: "BARANGAY CLEARANCE & CERTIFICATES",
+    description: "Quick processing of barangay certifications including clearances and residency verification.",
+    shortDescription: "Local barangay certificates and clearances",
+    icon: <Landmark className="w-10 h-10" />,
+    path: "/user/barangay/new",
     features: [
-      { text: "Building plan review", icon: <FileText size={16} /> },
-      { text: "Professional Registration", icon: <Shield size={16} /> },
-      { text: "Inspection scheduling", icon: <Calendar size={16} /> },
-      { text: "Downloadable Unofficial Digital Copy", icon: <CheckCircle size={16} /> }
+      { text: "Clearance application", icon: <FileText size={16} /> },
+      { text: "Residency verification", icon: <Home size={16} /> },
+      { text: "Business endorsement", icon: <Briefcase size={16} /> },
+      { text: "Certificate issuance", icon: <CheckCircle size={16} /> }
     ],
     stats: { 
-      processingTime: "7-14 days", 
-      successRate: "92%",
-      averageTime: "10 days"
+      processingTime: "1-2 days", 
+      successRate: "99%",
+      averageTime: "1 day"
     },
-    color: '#F59E0B',
-    bgColor: '#FEF3C715',
-    hoverColor: '#D97706',
-    hoverBgColor: '#FFF7E6',
-    activeBgColor: '#FFEECC',
-    popular: false
+    color: COLORS.secondary,
+    bgColor: `${COLORS.secondary}15`,
+    hoverColor: '#3A7BC8',
+    hoverBgColor: '#EBF3FF',
+    activeBgColor: '#D8E7FF',
+    popular: true
   },
   {
     id: 4,
@@ -158,31 +158,32 @@ const SERVICES = [
     activeBgColor: '#ECE5FF',
     popular: false
   },
-  {
+    {
     id: 5,
-    name: "BARANGAY CLEARANCE & CERTIFICATES",
-    description: "Quick processing of barangay certifications including clearances and residency verification.",
-    shortDescription: "Local barangay certificates and clearances",
-    icon: <Landmark className="w-10 h-10" />,
-    path: "/user/barangay/new",
+    name: "BUILDING & CONSTRUCTION PERMIT",
+    description: "Comprehensive building permit system with architectural review and safety compliance checks.",
+    shortDescription: "Construction permits and safety compliance",
+    icon: <Building2 className="w-10 h-10" />,
+    path: "/user/building/type",
     features: [
-      { text: "Clearance application", icon: <FileText size={16} /> },
-      { text: "Residency verification", icon: <Home size={16} /> },
-      { text: "Business endorsement", icon: <Briefcase size={16} /> },
-      { text: "Certificate issuance", icon: <CheckCircle size={16} /> }
+      { text: "Building plan review", icon: <FileText size={16} /> },
+      { text: "Professional Registration", icon: <Shield size={16} /> },
+      { text: "Inspection scheduling", icon: <Calendar size={16} /> },
+      { text: "Downloadable Unofficial Digital Copy", icon: <CheckCircle size={16} /> }
     ],
     stats: { 
-      processingTime: "1-2 days", 
-      successRate: "99%",
-      averageTime: "1 day"
+      processingTime: "7-14 days", 
+      successRate: "92%",
+      averageTime: "10 days"
     },
-    color: COLORS.secondary,
-    bgColor: `${COLORS.secondary}15`,
-    hoverColor: '#3A7BC8',
-    hoverBgColor: '#EBF3FF',
-    activeBgColor: '#D8E7FF',
-    popular: true
-  }
+    color: '#F59E0B',
+    bgColor: '#FEF3C715',
+    hoverColor: '#D97706',
+    hoverBgColor: '#FFF7E6',
+    activeBgColor: '#FFEECC',
+    popular: false
+  },
+
 ];
 
 // 🎯 Services available in PLMS
@@ -621,6 +622,27 @@ export default function UserDashboard() {
               )}
             </div>
           </div>
+          {/* Stats - Made more compact */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
+              <div className="text-xl font-bold" style={{ color: COLORS.primary }}>5K+</div>
+              <div className="text-xs text-gray-600">Monthly Applications</div>
+            </div>
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
+              <div className="text-xl font-bold" style={{ color: COLORS.secondary }}>98%</div>
+              <div className="text-xs text-gray-600">Approval Rate</div>
+            </div>
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
+              <div className="text-xl font-bold" style={{ color: COLORS.accent }}>70%</div>
+              <div className="text-xs text-gray-600">Faster Processing</div>
+            </div>
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 transition-all duration-700 hover:shadow-md hover:-translate-y-1 cursor-default">
+              <div className="text-xl font-bold" style={{ color: COLORS.gray[700] }}>24/7</div>
+              <div className="text-xs text-gray-600">Online Access</div>
+            </div>
+          </div>
+
+
         </div>
 
         {/* 🧩 Horizontal Rectangle Cards Section */}
