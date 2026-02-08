@@ -133,6 +133,13 @@ try {
     // Get user_id from POST data
     $user_id = isset($postData['user_id']) ? intval($postData['user_id']) : 0;
 
+    // Check if user_id column exists in the table
+    $hasUserIdColumn = false;
+    $checkCol = $conn->query("SHOW COLUMNS FROM `liquor_permit_applications` LIKE 'user_id'");
+    if ($checkCol && $checkCol->num_rows > 0) {
+        $hasUserIdColumn = true;
+    }
+
     // Build INSERT query
     $columns = [
         'applicant_id', 'application_type', 'existing_permit_number',
@@ -144,8 +151,7 @@ try {
         'renewal_reason', 'amendment_type', 'amendment_details', 'amendment_reason',
         'applicant_signature', 'declaration_agreed',
         'date_submitted', 'time_submitted',
-        'status', 'permit_type',
-        'user_id'
+        'status', 'permit_type'
     ];
 
     $values = [
@@ -176,16 +182,23 @@ try {
         $postData['date_submitted'] ?? date('Y-m-d'),
         $postData['time_submitted'] ?? date('H:i:s'),
         $postData['status'] ?? 'PENDING',
-        $postData['permit_type'] ?? 'LIQUOR',
-        $user_id > 0 ? $user_id : null
+        $postData['permit_type'] ?? 'LIQUOR'
     ];
+
+    // Conditionally add user_id if the column exists
+    if ($hasUserIdColumn) {
+        $columns[] = 'user_id';
+        $values[] = $user_id > 0 ? $user_id : null;
+    }
 
     $placeholders = implode(', ', array_fill(0, count($columns), '?'));
     $types = str_repeat('s', count($columns));
-    // Fix declaration_agreed to int
+    // Fix declaration_agreed to int (index 23)
     $types[23] = 'i';
-    // Fix user_id to int (last column)
-    $types[count($columns) - 1] = 'i';
+    // Fix user_id to int if present (last column)
+    if ($hasUserIdColumn) {
+        $types[count($columns) - 1] = 'i';
+    }
 
     $sql = "INSERT INTO liquor_permit_applications (" .
            implode(', ', $columns) . ") VALUES (" .

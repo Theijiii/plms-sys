@@ -9,6 +9,10 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import Swal from "sweetalert2";
 import { generatePermitPDF } from "../../../utils/permitPdfGenerator";
+import fileBrgyImg from "../../../assets/filebrgy.png";
+import fileBuildingImg from "../../../assets/filebuilding.png";
+import fileBusinessImg from "../../../assets/filebusiness.png";
+import fileTodaImg from "../../../assets/filetoda.png";
 
 export default function PermitTracker() {
   const [tracking, setTracking] = useState([]);
@@ -377,6 +381,20 @@ export default function PermitTracker() {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const isDownloadablePermit = (permitType) => {
+    const type = (permitType || '').toLowerCase();
+    return type.includes('business') || type.includes('barangay') || type.includes('building') || type.includes('toda') || type.includes('franchise');
+  };
+
+  const getPermitPreviewImage = (permitType) => {
+    const type = (permitType || '').toLowerCase();
+    if (type.includes('business')) return fileBusinessImg;
+    if (type.includes('barangay')) return fileBrgyImg;
+    if (type.includes('building')) return fileBuildingImg;
+    if (type.includes('toda') || type.includes('franchise')) return fileTodaImg;
+    return null;
+  };
+
   return (
     <div className="mx-1 mt-1 p-6 bg-[#FBFBFB] dark:bg-slate-900 text-[#4D4A4A] dark:text-slate-300 rounded-lg min-h-screen flex flex-col">
       <h1 className="text-xl md:text-3xl font-bold mb-2 text-center text-[#4D4A4A] dark:text-white">
@@ -720,18 +738,20 @@ export default function PermitTracker() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => downloadPermit(t)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            t.status === 'Approved' 
-                              ? 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20' 
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={t.status === 'Approved' ? 'Download Permit' : 'Available when approved'}
-                          disabled={t.status !== 'Approved'}
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
+                        {isDownloadablePermit(t.permitType) && (
+                          <button
+                            onClick={() => downloadPermit(t)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              t.status === 'Approved' 
+                                ? 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20' 
+                                : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                            title={t.status === 'Approved' ? 'Download Permit' : 'Available when approved'}
+                            disabled={t.status !== 'Approved'}
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        )}
                         {t.status === "For Compliance" && (
                           <label className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer" title="Upload Compliance Documents">
                             <Upload className="w-4 h-4" />
@@ -848,158 +868,143 @@ export default function PermitTracker() {
 
       {/* Enhanced Details Modal */}
       {showModal && selectedPermit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowModal(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="sticky top-0 bg-[#4A90E2] text-white p-6 rounded-t-lg z-10">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold mb-1">Complete Application Details</h2>
-                  <p className="text-sm text-blue-100">Permit ID: {selectedPermit.id}</p>
+            <div className={`relative px-6 py-5 flex-shrink-0 ${
+              selectedPermit.status === 'Approved' ? 'bg-gradient-to-r from-[#4CAF50] to-[#43A047]' :
+              selectedPermit.status === 'Rejected' ? 'bg-gradient-to-r from-[#E53935] to-[#C62828]' :
+              selectedPermit.status === 'For Compliance' ? 'bg-gradient-to-r from-[#F57C00] to-[#E65100]' :
+              'bg-gradient-to-r from-[#4A90E2] to-[#3A7BD5]'
+            } text-white`}>
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                    {getPermitIcon(selectedPermit.permitType)}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold leading-tight">{selectedPermit.permitType || 'Permit'}</h2>
+                    <p className="text-sm text-white/80 font-mono">{selectedPermit.id}</p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-semibold flex items-center gap-1.5">
+                    {getStatusIcon(selectedPermit.status)}
+                    {selectedPermit.status}
+                  </span>
+                  <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Status Badge */}
-              <div className="flex justify-center">
-                <div className={`px-6 py-3 rounded-full font-semibold text-lg flex items-center gap-2 ${
-                  selectedPermit.status === 'Approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                  selectedPermit.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                  selectedPermit.status === 'For Compliance' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                  'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                }`}>
-                  {getStatusIcon(selectedPermit.status)}
-                  {selectedPermit.status}
-                </div>
-              </div>
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
 
-              {/* Timeline Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <Calendar className="w-6 h-6 mx-auto mb-2 text-blue-500" />
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Submitted</p>
-                  <p className="font-semibold text-sm">{formatDate(selectedPermit.submittedDate)}</p>
+              {/* Date Timeline */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                  <Calendar className="w-5 h-5 mx-auto mb-1.5 text-blue-500" />
+                  <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">Submitted</p>
+                  <p className="font-semibold text-xs">{formatDate(selectedPermit.submittedDate)}</p>
                 </div>
-                
                 {selectedPermit.approvedDate && (
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Approved</p>
-                    <p className="font-semibold text-sm">{formatDate(selectedPermit.approvedDate)}</p>
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+                    <CheckCircle className="w-5 h-5 mx-auto mb-1.5 text-green-500" />
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">Approved</p>
+                    <p className="font-semibold text-xs">{formatDate(selectedPermit.approvedDate)}</p>
                   </div>
                 )}
-
                 {selectedPermit.expirationDate && (
-                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                    <Calendar className="w-6 h-6 mx-auto mb-2 text-orange-500" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Expires</p>
-                    <p className="font-semibold text-sm">{formatDate(selectedPermit.expirationDate)}</p>
+                  <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                    <Calendar className="w-5 h-5 mx-auto mb-1.5 text-orange-500" />
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">Expires</p>
+                    <p className="font-semibold text-xs">{formatDate(selectedPermit.expirationDate)}</p>
                   </div>
                 )}
-
                 {selectedPermit.fees && (
-                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <FileText className="w-6 h-6 mx-auto mb-2 text-purple-500" />
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Fees</p>
-                    <p className="font-semibold text-sm">{selectedPermit.fees}</p>
+                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
+                    <FileText className="w-5 h-5 mx-auto mb-1.5 text-purple-500" />
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">Total Fees</p>
+                    <p className="font-semibold text-xs">{selectedPermit.fees}</p>
                   </div>
                 )}
               </div>
 
-              {/* Application Information */}
-              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-500" />
-                  Application Information
+              {/* Application Info + Applicant Details Combined */}
+              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 text-sm">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  Application Details
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Permit Type:</span>
-                      <span className="text-sm font-medium">{selectedPermit.permitType || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Application Type:</span>
-                      <span className={`text-sm font-medium px-2 py-0.5 rounded ${
-                        selectedPermit.application_type === 'New' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-                        selectedPermit.application_type === 'Renewal' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                        selectedPermit.application_type?.startsWith('Amendment') ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300' :
-                        selectedPermit.application_type === 'Professional Registration' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' :
-                        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
-                      }`}>{selectedPermit.application_type || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Receipt Number:</span>
-                      <span className="text-sm font-medium font-mono">{selectedPermit.receiptNumber || 'N/A'}</span>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Permit Type</span>
+                    <span className="text-xs font-semibold">{selectedPermit.permitType || 'N/A'}</span>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
-                      <span className="text-sm font-medium">{selectedPermit.email || user?.email || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Submitted By:</span>
-                      <span className="text-sm font-medium">{selectedPermit.applicantName || user?.fullName || 'N/A'}</span>
-                    </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Application Type</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      selectedPermit.application_type === 'New' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                      selectedPermit.application_type === 'Renewal' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                      'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                    }`}>{selectedPermit.application_type || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Receipt No.</span>
+                    <span className="text-xs font-semibold font-mono">{selectedPermit.receiptNumber || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Email</span>
+                    <span className="text-xs font-semibold">{selectedPermit.email || user?.email || 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Applicant/Business Details */}
-              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <Building className="w-5 h-5 text-blue-500" />
-                  Applicant & Business Details
+              {/* Applicant & Business */}
+              <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 text-sm">
+                  <Building className="w-4 h-4 text-blue-500" />
+                  Applicant & Business
                 </h3>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Applicant Name</p>
-                      <p className="text-sm font-medium">{selectedPermit.applicantName || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Business/Establishment Name</p>
-                      <p className="text-sm font-medium">{selectedPermit.businessName || 'N/A'}</p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5">
+                  <div className="py-1 border-b border-gray-100 dark:border-gray-600">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Applicant Name</p>
+                    <p className="text-sm font-medium mt-0.5">{selectedPermit.applicantName || 'N/A'}</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Complete Address</p>
-                    <p className="text-sm font-medium">{selectedPermit.address || 'N/A'}</p>
+                  <div className="py-1 border-b border-gray-100 dark:border-gray-600">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Business/Establishment</p>
+                    <p className="text-sm font-medium mt-0.5">{selectedPermit.businessName || 'N/A'}</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Contact Number</p>
-                      <p className="text-sm font-medium">{selectedPermit.contactNumber || 'N/A'}</p>
+                  <div className="py-1 border-b border-gray-100 dark:border-gray-600 md:col-span-2">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Complete Address</p>
+                    <p className="text-sm font-medium mt-0.5">{selectedPermit.address || 'N/A'}</p>
+                  </div>
+                  <div className="py-1 border-b border-gray-100 dark:border-gray-600">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Contact Number</p>
+                    <p className="text-sm font-medium mt-0.5">{selectedPermit.contactNumber || 'N/A'}</p>
+                  </div>
+                  {selectedPermit.tin && (
+                    <div className="py-1 border-b border-gray-100 dark:border-gray-600">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">TIN</p>
+                      <p className="text-sm font-medium font-mono mt-0.5">{selectedPermit.tin}</p>
                     </div>
-                    {selectedPermit.tin && (
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">TIN</p>
-                        <p className="text-sm font-medium font-mono">{selectedPermit.tin}</p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Requirements Section */}
+              {/* Requirements */}
               {selectedPermit.requirements && selectedPermit.requirements.length > 0 && (
-                <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
                     Submitted Requirements
                   </h3>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
                     {selectedPermit.requirements.map((req, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <li key={index} className="flex items-center gap-2 text-xs bg-green-50 dark:bg-green-900/10 px-3 py-2 rounded-lg">
+                        <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                         <span>{req}</span>
                       </li>
                     ))}
@@ -1009,22 +1014,16 @@ export default function PermitTracker() {
 
               {/* Compliance Notice */}
               {selectedPermit.complianceNotes && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-5 border-l-4 border-yellow-500">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-5 border-l-4 border-amber-500">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <h3 className="font-bold text-yellow-800 dark:text-yellow-300 mb-2">Action Required: Compliance Documents Needed</h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-3">{selectedPermit.complianceNotes}</p>
-                      <label className="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg cursor-pointer transition-colors text-sm font-medium">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Compliance Documents
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(e) => handleFileUpload(selectedPermit, e)}
-                          className="hidden"
-                          disabled={uploading}
-                        />
+                      <h3 className="font-bold text-amber-800 dark:text-amber-300 text-sm mb-1">Compliance Required</h3>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mb-3">{selectedPermit.complianceNotes}</p>
+                      <label className="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg cursor-pointer transition-colors text-xs font-semibold">
+                        <Upload className="w-3.5 h-3.5 mr-1.5" />
+                        Upload Documents
+                        <input type="file" multiple onChange={(e) => handleFileUpload(selectedPermit, e)} className="hidden" disabled={uploading} />
                       </label>
                     </div>
                   </div>
@@ -1033,49 +1032,63 @@ export default function PermitTracker() {
 
               {/* Rejection Notice */}
               {selectedPermit.rejectionReason && (
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-5 border-l-4 border-red-500">
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-5 border-l-4 border-red-500">
                   <div className="flex items-start gap-3">
-                    <X className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <X className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <h3 className="font-bold text-red-800 dark:text-red-300 mb-2">Application Rejected</h3>
-                      <p className="text-sm text-red-700 dark:text-red-400">{selectedPermit.rejectionReason}</p>
+                      <h3 className="font-bold text-red-800 dark:text-red-300 text-sm mb-1">Application Rejected</h3>
+                      <p className="text-xs text-red-700 dark:text-red-400">{selectedPermit.rejectionReason}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Download Digital Copy Section - Only for Approved */}
-              {selectedPermit.status === 'Approved' && (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-300 dark:border-green-700">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-14 h-14 bg-green-100 dark:bg-green-900/40 rounded-xl flex items-center justify-center">
-                      <FileType className="w-7 h-7 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-green-800 dark:text-green-300 text-lg mb-1">
-                        Your Permit Has Been Approved!
-                      </h3>
-                      <p className="text-sm text-green-700 dark:text-green-400 mb-4">
-                        Download your unofficial digital copy as a PDF document. This includes your complete
-                        applicant and application details customized for your <strong>{selectedPermit.permitType}</strong>.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-3">
+              {/* Download Permit Section - Only for Approved + Downloadable Permit Types */}
+              {selectedPermit.status === 'Approved' && isDownloadablePermit(selectedPermit.permitType) && (
+                <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 rounded-2xl border-2 border-green-200 dark:border-green-700 overflow-hidden">
+                  <div className="bg-green-600 dark:bg-green-700 px-5 py-3 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-white" />
+                    <h3 className="font-bold text-white text-sm">Your Permit Has Been Approved!</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex flex-col sm:flex-row gap-5 items-center">
+                      {/* Permit Preview Image */}
+                      {getPermitPreviewImage(selectedPermit.permitType) && (
+                        <div className="flex-shrink-0 w-40 sm:w-44">
+                          <div className="relative rounded-xl overflow-hidden shadow-lg border-2 border-white dark:border-gray-600 group">
+                            <img
+                              src={getPermitPreviewImage(selectedPermit.permitType)}
+                              alt={`${selectedPermit.permitType} Preview`}
+                              className="w-full h-auto object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                              <p className="text-white text-[10px] font-semibold text-center">Sample Preview</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {/* Download Info & Button */}
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-sm text-green-800 dark:text-green-300 mb-1 font-medium">
+                          Download your digital copy of <strong>{selectedPermit.permitType}</strong>
+                        </p>
+                        <p className="text-xs text-green-700/70 dark:text-green-400/70 mb-4">
+                          System-generated PDF with "DIGITAL COPY" watermark. For the official/physical permit, please visit the respective office.
+                        </p>
                         <button
                           onClick={() => downloadPermit(selectedPermit)}
                           disabled={downloading}
-                          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg text-sm"
                         >
                           {downloading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <Download className="w-5 h-5" />
+                            <Download className="w-4 h-4" />
                           )}
                           {downloading ? 'Generating PDF...' : 'Download PDF Permit'}
                         </button>
                       </div>
-                      <p className="text-xs text-green-600/70 dark:text-green-500/70 mt-3">
-                        This is a system-generated digital copy with a "DIGITAL COPY" watermark. For the official/physical permit, please visit the respective office.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -1091,9 +1104,9 @@ export default function PermitTracker() {
                 selectedPermit[key] !== 'N/A' &&
                 typeof selectedPermit[key] !== 'object'
               ).length > 0 && (
-                <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3">Additional Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 text-sm">Additional Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                     {Object.entries(selectedPermit).map(([key, value]) => {
                       if (['id', 'permitType', 'application_type', 'status', 'applicantName', 'businessName', 
                           'address', 'contactNumber', 'submittedDate', 'approvedDate', 'rejectedDate', 
@@ -1103,45 +1116,39 @@ export default function PermitTracker() {
                         return null;
                       }
                       return (
-                        <div key={key} className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}:
+                        <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-600">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
-                          <span className="text-sm font-medium">{value}</span>
+                          <span className="text-xs font-semibold">{value}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            {/* Modal Footer */}
+            <div className="flex-shrink-0 px-6 py-4 bg-gray-50 dark:bg-slate-700/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+              {selectedPermit.status === 'Approved' && isDownloadablePermit(selectedPermit.permitType) ? (
                 <button
                   onClick={() => downloadPermit(selectedPermit)}
-                  disabled={selectedPermit.status !== 'Approved' || downloading}
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                    selectedPermit.status === 'Approved'
-                      ? 'bg-[#4CAF50] hover:bg-[#43A047] text-white'
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-400 cursor-not-allowed'
-                  }`}
+                  disabled={downloading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#4CAF50] hover:bg-[#43A047] disabled:bg-green-400 text-white rounded-xl font-semibold transition-colors text-sm"
                 >
-                  {downloading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  {selectedPermit.status === 'Approved'
-                    ? (downloading ? 'Generating PDF...' : 'Download PDF Permit')
-                    : 'Download (Available when Approved)'}
+                  {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {downloading ? 'Generating...' : 'Download Permit'}
                 </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 sm:flex-none px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
-                >
-                  Close
-                </button>
-              </div>
+              ) : (
+                <div />
+              )}
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-gray-700 dark:text-gray-200 rounded-xl font-semibold transition-colors text-sm"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

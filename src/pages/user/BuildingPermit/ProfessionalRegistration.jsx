@@ -8,6 +8,8 @@ const COLORS = {
   primary: '#4A90E2', // Blue for title
   secondary: '#000000', // Black for subheadings and text
   accent: '#FDA811',
+  success: '#28A745',
+  danger: '#DC3545',
   background: '#FBFBFB',
   font: 'Montserrat, Arial, sans-serif'
 };
@@ -275,11 +277,11 @@ export default function ProfessionalRegistration() {
         body: formDataToSend
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP error! status: ${response.status}`);
+      }
       
       if (result.success) {
         setIsSubmitting(false);
