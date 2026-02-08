@@ -353,11 +353,11 @@ export default function AncillaryPermits() {
       if (formData.signature_file) fd.append('signature_file', formData.signature_file);
       const response = await fetch(API_BASE, { method: 'POST', body: fd });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP error! status: ${response.status}`);
+      }
       if (result.success) {
         try { logPermitSubmission("Building Permit", result.data?.permit_id || "", { permit_type: selectedPermit?.title || "Ancillary" }); } catch(e) { console.warn('Activity log failed:', e); }
         Swal.fire({ icon: 'success', title: 'Application Submitted!',

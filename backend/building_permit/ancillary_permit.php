@@ -118,6 +118,13 @@ function handleAncillaryPermitSubmission() {
         // User ID for tracking
         $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
 
+        // Check if user_id column exists in the table
+        $hasUserIdColumn = false;
+        $checkCol = $conn->query("SHOW COLUMNS FROM `ancillary_permit` LIKE 'user_id'");
+        if ($checkCol && $checkCol->num_rows > 0) {
+            $hasUserIdColumn = true;
+        }
+
         // Type-specific data (JSON)
         $type_specific_data = $_POST['type_specific_data'] ?? '{}';
 
@@ -131,23 +138,33 @@ function handleAncillaryPermitSubmission() {
         $signature_file_path = saveUploadedFile('signature_file', $subDir);
 
         // Insert into database
-        $stmt = $conn->prepare("INSERT INTO ancillary_permit 
-            (permit_type, first_name, last_name, middle_initial, contact_number, email, 
+        $columns = 'permit_type, first_name, last_name, middle_initial, contact_number, email, 
              owner_address, property_address, building_permit_number, barangay_clearance, 
              tct_or_tax_dec, professional_name, professional_role, 
              prc_id, ptr_number, prc_expiry, type_specific_data, project_description,
-             document_plans_path, document_id_path, signature_file_path, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-        if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
-
-        $stmt->bind_param('sssssssssssssssssssssi',
+             document_plans_path, document_id_path, signature_file_path';
+        $placeholders = '?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?';
+        $types = 'sssssssssssssssssssss';
+        $params = [
             $permit_type, $first_name, $last_name, $middle_initial, $contact_number, $email,
             $owner_address, $property_address, $building_permit_number, $barangay_clearance,
             $tct_or_tax_dec, $professional_name, $professional_role,
             $prc_id, $ptr_number, $prc_expiry, $type_specific_data, $project_description,
-            $document_plans_path, $document_id_path, $signature_file_path, $user_id
-        );
+            $document_plans_path, $document_id_path, $signature_file_path
+        ];
+
+        if ($hasUserIdColumn) {
+            $columns .= ', user_id';
+            $placeholders .= ', ?';
+            $types .= 'i';
+            $params[] = $user_id;
+        }
+
+        $stmt = $conn->prepare("INSERT INTO ancillary_permit ({$columns}) VALUES ({$placeholders})");
+
+        if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
+
+        $stmt->bind_param($types, ...$params);
 
         if (!$stmt->execute()) throw new Exception("Insert failed: " . $stmt->error);
 
