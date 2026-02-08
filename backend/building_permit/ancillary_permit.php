@@ -115,6 +115,9 @@ function handleAncillaryPermitSubmission() {
             throw new Exception("Professional name, PRC ID, and PTR number are required.");
         }
 
+        // User ID for tracking
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+
         // Type-specific data (JSON)
         $type_specific_data = $_POST['type_specific_data'] ?? '{}';
 
@@ -133,17 +136,17 @@ function handleAncillaryPermitSubmission() {
              owner_address, property_address, building_permit_number, barangay_clearance, 
              tct_or_tax_dec, professional_name, professional_role, 
              prc_id, ptr_number, prc_expiry, type_specific_data, project_description,
-             document_plans_path, document_id_path, signature_file_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+             document_plans_path, document_id_path, signature_file_path, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
 
-        $stmt->bind_param('sssssssssssssssssssss',
+        $stmt->bind_param('sssssssssssssssssssssi',
             $permit_type, $first_name, $last_name, $middle_initial, $contact_number, $email,
             $owner_address, $property_address, $building_permit_number, $barangay_clearance,
             $tct_or_tax_dec, $professional_name, $professional_role,
             $prc_id, $ptr_number, $prc_expiry, $type_specific_data, $project_description,
-            $document_plans_path, $document_id_path, $signature_file_path
+            $document_plans_path, $document_id_path, $signature_file_path, $user_id
         );
 
         if (!$stmt->execute()) throw new Exception("Insert failed: " . $stmt->error);

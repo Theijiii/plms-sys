@@ -144,7 +144,8 @@ try {
         'renewal_reason', 'amendment_type', 'amendment_details', 'amendment_reason',
         'applicant_signature', 'declaration_agreed',
         'date_submitted', 'time_submitted',
-        'status', 'permit_type'
+        'status', 'permit_type',
+        'user_id'
     ];
 
     $values = [
@@ -175,13 +176,16 @@ try {
         $postData['date_submitted'] ?? date('Y-m-d'),
         $postData['time_submitted'] ?? date('H:i:s'),
         $postData['status'] ?? 'PENDING',
-        $postData['permit_type'] ?? 'LIQUOR'
+        $postData['permit_type'] ?? 'LIQUOR',
+        $user_id > 0 ? $user_id : null
     ];
 
     $placeholders = implode(', ', array_fill(0, count($columns), '?'));
     $types = str_repeat('s', count($columns));
     // Fix declaration_agreed to int
     $types[23] = 'i';
+    // Fix user_id to int (last column)
+    $types[count($columns) - 1] = 'i';
 
     $sql = "INSERT INTO liquor_permit_applications (" .
            implode(', ', $columns) . ") VALUES (" .

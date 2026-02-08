@@ -468,6 +468,14 @@ export default function RenewalBuilding() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
+    Swal.fire({
+      title: 'Submitting...',
+      html: '<p>Please wait while we process your renewal application.</p>',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     const step1Ok = validateStep(1);
     const step2Ok = validateStep(2);
     const step3Ok = validateStep(3);
@@ -475,6 +483,7 @@ export default function RenewalBuilding() {
 
     if (!(step1Ok && step2Ok && step3Ok && step4Ok)) {
       setIsSubmitting(false);
+      Swal.close();
       if (!step1Ok) setCurrentStep(1);
       else if (!step2Ok) setCurrentStep(2);
       else if (!step3Ok) setCurrentStep(3);
@@ -503,7 +512,13 @@ export default function RenewalBuilding() {
         form_of_ownership: formData.form_of_ownership,
         use_of_permit: formData.use_of_permit,
         prc_license: '',
-        remarks: formData.remarks || '',
+        remarks: [
+          formData.previous_permit_number ? `Previous Permit: ${formData.previous_permit_number}` : '',
+          formData.previous_permit_expiry ? `Prev. Permit Expiry: ${formData.previous_permit_expiry}` : '',
+          formData.id_type ? `ID Type: ${formData.id_type}` : '',
+          formData.id_number ? `ID Number: ${formData.id_number}` : '',
+          formData.remarks || ''
+        ].filter(Boolean).join(' | '),
         proposed_date_of_construction: '',
         expected_date_of_completion: '',
         total_estimated_cost: formData.total_estimated_cost || '0',
@@ -528,6 +543,8 @@ export default function RenewalBuilding() {
         equipment_cost: '0',
         proposed_start: '',
         expected_completion: '',
+        id_type: formData.id_type || '',
+        id_number: formData.id_number || '',
       }).forEach(([key, value]) => {
         formDataToSend.append(key, value);
       });

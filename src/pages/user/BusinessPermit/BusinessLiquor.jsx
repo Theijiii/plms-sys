@@ -1230,9 +1230,9 @@ export default function LiquorPermitApplication() {
       const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
       formDataToSend.append('user_id', userId);
 
-      // Append form fields
+      // Append form fields (filter null/undefined to empty strings)
       Object.entries(formFields).forEach(([key, value]) => {
-        formDataToSend.append(key, value);
+        formDataToSend.append(key, value ?? '');
       });
 
       // Append files
@@ -1272,7 +1272,7 @@ export default function LiquorPermitApplication() {
 
       if (data.success) {
         showSuccessMessage(data.message || "Liquor permit application submitted successfully!");
-        logPermitSubmission("Business Permit", data.permit_id || "", { permit_type: "Liquor" });
+        try { logPermitSubmission("Business Permit", data.permit_id || "", { permit_type: "Liquor" }); } catch(e) { console.warn('Activity log failed:', e); }
         
         setTimeout(() => {
           navigate("/user/permittracker");

@@ -50,7 +50,7 @@ export default function FranchiseRenewal() {
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
   const [showPaymentCompletionModal, setShowPaymentCompletionModal] = useState(false);
   
-  // Mayor's Permit Verification
+  // Franchise Permit Verification
   const [verifyingMayorsPermit, setVerifyingMayorsPermit] = useState(false);
   const [mayorsPermitVerificationResult, setMayorsPermitVerificationResult] = useState(null);
   const [showMayorsPermitModal, setShowMayorsPermitModal] = useState(false);
@@ -122,7 +122,7 @@ export default function FranchiseRenewal() {
     drivers_license: null,
     inspection_report: null,
     
-    // Additional Documents for Mayor's Permit Renewal
+    // Additional Documents for Franchise Permit Renewal
     barangay_business_clearance: null,
     barangay_clearance_id: '',
     
@@ -198,7 +198,7 @@ export default function FranchiseRenewal() {
   // Renewal Fees
   const RENEWAL_FEES = {
     mtop: { renewal_fee: 200.00, sticker_fee: 100.00, inspection_fee: 100.00 },
-    mayor: { renewal_fee: 300.00, sticker_fee: 100.00, inspection_fee: 100.00 }
+    franchise: { renewal_fee: 300.00, sticker_fee: 100.00, inspection_fee: 100.00 }
   };
 
   // Validation functions
@@ -868,7 +868,7 @@ const checkExistingPermit = async () => {
       Swal.fire({
         icon: 'success',
         title: 'Success!',
-        text: `Existing ${renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s'} permit found! ${message}`,
+        text: `Existing ${renewalType === 'MTOP' ? 'MTOP' : 'Franchise'} permit found! ${message}`,
         confirmButtonColor: COLORS.primary,
         timer: 3000,
         timerProgressBar: true
@@ -1021,7 +1021,7 @@ const checkExistingPermit = async () => {
     });
   };
 
-  // Verify Mayor's Permit ID with applicant_id fetching
+  // Verify Franchise Permit ID with applicant_id fetching
   const verifyMayorsPermitId = async () => {
     const mayorsPermitId = formData.mayors_permit_id.trim();
     
@@ -1029,7 +1029,7 @@ const checkExistingPermit = async () => {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: "Please enter a Mayor's Permit ID to verify",
+        text: "Please enter a Franchise Permit ID to verify",
         confirmButtonColor: COLORS.danger
       });
       return;
@@ -1093,16 +1093,16 @@ const checkExistingPermit = async () => {
         Swal.fire({
           icon: 'error',
           title: 'Verification Failed',
-          text: "Mayor's Permit ID not found or not approved. Please check the ID and try again.",
+          text: "Franchise Permit ID not found or not approved. Please check the ID and try again.",
           confirmButtonColor: COLORS.danger
         });
       }
     } catch (error) {
-      console.error("Error verifying Mayor's Permit ID:", error);
+      console.error("Error verifying Franchise Permit ID:", error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: "Error verifying Mayor's Permit ID. Please try again.",
+        text: "Error verifying Franchise Permit ID. Please try again.",
         confirmButtonColor: COLORS.danger
       });
     } finally {
@@ -1124,7 +1124,7 @@ const checkExistingPermit = async () => {
       return;
     }
     
-    const fees = renewalType === 'MTOP' ? RENEWAL_FEES.mtop : RENEWAL_FEES.mayor;
+    const fees = renewalType === 'MTOP' ? RENEWAL_FEES.mtop : RENEWAL_FEES.franchise;
     let totalAmount = 0;
     if (formData.renewal_fee_checked) totalAmount += fees.renewal_fee;
     if (formData.sticker_fee_checked) totalAmount += fees.sticker_fee;
@@ -1588,8 +1588,8 @@ const checkExistingPermit = async () => {
         { name: 'drivers_license', label: 'Driver\'s License' }
       );
       
-      // Additional documents for Mayor's Permit
-      if (renewalType === 'MAYOR') {
+      // Additional documents for Franchise Permit
+      if (renewalType === 'FRANCHISE') {
         requiredDocs.push(
           { name: 'barangay_business_clearance', label: 'Barangay Business Clearance' }
         );
@@ -1603,7 +1603,7 @@ const checkExistingPermit = async () => {
       let uploadedCount = 0;
       requiredDocs.forEach(doc => {
         if (!formData[doc.name]) {
-          newErrors[doc.name] = `${doc.label} is required for ${renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s Permit'} renewal`;
+          newErrors[doc.name] = `${doc.label} is required for ${renewalType === 'MTOP' ? 'MTOP' : 'Franchise Permit'} renewal`;
         } else {
           uploadedCount++;
         }
@@ -1669,7 +1669,7 @@ const checkExistingPermit = async () => {
 
   const isStepValid = (step) => {
     const validators = {
-      1: () => renewalType === 'MTOP' || renewalType === 'MAYOR',
+      1: () => renewalType === 'MTOP' || renewalType === 'FRANCHISE',
       2: () => {
         if (!formData.existing_permit_id) return false;
         if (!formData.existing_plate_number) return false;
@@ -1727,7 +1727,7 @@ const checkExistingPermit = async () => {
       },
       5: () => {
         const requiredDocs = ['old_permit_copy', 'lto_cr_copy', 'lto_or_copy', 'community_tax_certificate', 'drivers_license'];
-        if (renewalType === 'MAYOR') {
+        if (renewalType === 'FRANCHISE') {
           requiredDocs.push('barangay_business_clearance');
         }
         return requiredDocs.every(doc => formData[doc]);
@@ -1802,7 +1802,7 @@ const checkExistingPermit = async () => {
       Swal.fire({
         title: 'Confirm Renewal Submission',
         html: `
-          <p>You are about to submit your ${renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s Permit'} renewal application.</p>
+          <p>You are about to submit your ${renewalType === 'MTOP' ? 'MTOP' : 'Franchise Permit'} renewal application.</p>
           ${existingPermit ? `
             <div style="margin-top: 10px; padding: 10px; background: #EFF6FF; border-radius: 8px; text-align: left;">
               <p style="font-weight: bold; color: #1E40AF;">✓ Existing Permit Verified</p>
@@ -1966,7 +1966,7 @@ const checkExistingPermit = async () => {
       
       if (data.success) {
         showSuccessMessage(`Renewal application submitted successfully! Application ID: ${data.data.application_id}`);
-        logPermitSubmission("Franchise Permit", data.data?.application_id || "", { permit_type: "Renewal" });
+        try { logPermitSubmission("Franchise Permit", data.data?.application_id || "", { permit_type: "Renewal" }); } catch(e) { console.warn('Activity log failed:', e); }
         
         setTimeout(() => {
           navigate("/user/permittracker");
@@ -2105,31 +2105,31 @@ const checkExistingPermit = async () => {
                 
                 <div 
                   className="p-6 border-2 border-green-300 rounded-lg bg-green-50 hover:bg-green-100 transition-colors duration-200 cursor-pointer" 
-                  onClick={() => setRenewalType('MAYOR')}
+                  onClick={() => setRenewalType('FRANCHISE')}
                 >
                   <div className="flex items-center">
                     <input
                       type="radio"
                       name="renewal_type"
-                      value="MAYOR"
-                      checked={renewalType === 'MAYOR'}
+                      value="FRANCHISE"
+                      checked={renewalType === 'FRANCHISE'}
                       onChange={handleChange}
                       className="w-5 h-5 text-green-600"
                     />
                     <div className="ml-4">
                       <div className="flex items-center gap-3">
                         <Receipt className="w-6 h-6 text-green-600" />
-                        <h4 className="font-bold text-xl" style={{ color: COLORS.success }}>Transport Mayor's Permit Renewal</h4>
+                        <h4 className="font-bold text-xl" style={{ color: COLORS.success }}>Franchise Permit Renewal</h4>
                       </div>
                       <p className="text-sm mt-2" style={{ color: COLORS.secondary }}>
-                        For Mayor's Permit renewal (business/transport category) — this applies if your tricycle operation is registered as a business.
+                        For Franchise Permit renewal — this applies if your tricycle operation requires a franchise permit for legal operation.
                       </p>
                       <div className="mt-4 p-3 bg-green-100 rounded-lg">
                         <p className="text-sm font-semibold text-green-800 mb-2">Required Documents:</p>
                         <ul className="text-xs space-y-1 text-green-700">
                           <li>• Official Receipt of Business Tax Payment</li>
                           <li>• Barangay Business Clearance</li>
-                          <li>• Previous Mayor's Permit</li>
+                          <li>• Previous Franchise Permit</li>
                           <li>• Old MTOP permit (photocopy)</li>
                           <li>• LTO CR and OR (photocopies)</li>
                           <li>• Barangay Clearance</li>
@@ -2142,7 +2142,7 @@ const checkExistingPermit = async () => {
                 
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium" style={{ color: COLORS.secondary }}>
-                    Selected: <span className="font-bold">{renewalType === 'MTOP' ? 'MTOP Renewal' : 'Transport Mayor\'s Permit Renewal'}</span>
+                    Selected: <span className="font-bold">{renewalType === 'MTOP' ? 'MTOP Renewal' : 'Franchise Permit Renewal'}</span>
                   </p>
                   <p className="text-xs mt-2 text-gray-600">
                     {renewalType === 'MTOP' 
@@ -2161,7 +2161,7 @@ const checkExistingPermit = async () => {
             
             <div className="bg-white rounded-lg shadow p-6 border border-black mb-6">
               <h4 className="font-bold text-lg mb-4" style={{ color: COLORS.primary }}>
-                Check {renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s'} Permit Status
+                Check {renewalType === 'MTOP' ? 'MTOP' : 'Franchise'} Permit Status
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -2217,7 +2217,7 @@ const checkExistingPermit = async () => {
                   }}
                   className="px-6 py-3 rounded-lg font-semibold text-white transition-colors duration-300"
                 >
-                  {isCheckingExisting ? 'Checking...' : `Verify ${renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s'} Permit`}
+                  {isCheckingExisting ? 'Checking...' : `Verify ${renewalType === 'MTOP' ? 'MTOP' : 'Franchise'} Permit`}
                 </button>
               </div>
             </div>
@@ -2618,7 +2618,7 @@ const checkExistingPermit = async () => {
           <div className="space-y-6">
             <h3 className="text-xl font-semibold mb-4" style={{ color: COLORS.secondary }}>Required Documents for Renewal</h3>
             <p className="text-sm mb-4 text-gray-600" style={{ fontFamily: COLORS.font }}>
-              <span className="text-red-600 font-bold">* All required documents must be uploaded.</span> Documents marked with * are required for {renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s Permit'} renewal.
+              <span className="text-red-600 font-bold">* All required documents must be uploaded.</span> Documents marked with * are required for {renewalType === 'MTOP' ? 'MTOP' : 'Franchise Permit'} renewal.
             </p>
             
             {errors.min_documents && (
@@ -2630,8 +2630,8 @@ const checkExistingPermit = async () => {
             )}
             
             <div className="space-y-4">
-              {/* Mayor's Permit specific documents - AT THE TOP */}
-              {renewalType === 'MAYOR' && (
+              {/* Franchise Permit specific documents - AT THE TOP */}
+              {renewalType === 'FRANCHISE' && (
                 <div className="flex flex-col p-4 border border-gray-300 rounded-lg">
                   <div className="mb-3">
                     <label className="flex items-center font-medium">
@@ -2887,7 +2887,7 @@ const checkExistingPermit = async () => {
           </div>
         );
       case 6:
-        const fees = renewalType === 'MTOP' ? RENEWAL_FEES.mtop : RENEWAL_FEES.mayor;
+        const fees = renewalType === 'MTOP' ? RENEWAL_FEES.mtop : RENEWAL_FEES.franchise;
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold mb-4" style={{ color: COLORS.secondary }}>
@@ -3310,7 +3310,7 @@ const checkExistingPermit = async () => {
               <div className="space-y-6">
                 <div className="p-4 bg-blue-50 rounded-lg mb-4">
                   <h5 className="font-bold text-lg mb-2" style={{ color: COLORS.primary }}>
-                    {renewalType === 'MTOP' ? 'MTOP Renewal Application' : 'Mayor\'s Permit Renewal Application'}
+                    {renewalType === 'MTOP' ? 'MTOP Renewal Application' : 'Franchise Permit Renewal Application'}
                   </h5>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <p><span className="font-medium">Original Permit ID:</span> {formData.original_permit_id}</p>
@@ -3463,10 +3463,10 @@ const checkExistingPermit = async () => {
                       <span className="font-medium text-gray-600">TODA Name:</span>
                       <p className="font-semibold text-gray-900 mt-1">{formData.toda_name}</p>
                     </div>
-                    {renewalType === 'MAYOR' && formData.mayors_permit_id && (
+                    {renewalType === 'FRANCHISE' && formData.mayors_permit_id && (
                       <>
                         <div className="p-3 bg-gray-50 rounded-lg">
-                          <span className="font-medium text-gray-600">Mayor's Permit ID:</span>
+                          <span className="font-medium text-gray-600">Franchise Permit ID:</span>
                           <p className="font-semibold text-gray-900 mt-1">{formData.mayors_permit_id}</p>
                         </div>
                         <div className="p-3 bg-gray-50 rounded-lg">
@@ -3603,7 +3603,7 @@ const checkExistingPermit = async () => {
                         </div>
                       </div>
                     )}
-                    {renewalType === 'MAYOR' && formData.barangay_business_clearance && (
+                    {renewalType === 'FRANCHISE' && formData.barangay_business_clearance && (
                       <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
@@ -3702,27 +3702,27 @@ const checkExistingPermit = async () => {
                       {formData.renewal_fee_checked && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-700">Renewal Fee:</span>
-                          <span className="font-semibold">₱{(renewalType === 'MTOP' ? RENEWAL_FEES.mtop.renewal_fee : RENEWAL_FEES.mayor.renewal_fee).toFixed(2)}</span>
+                          <span className="font-semibold">₱{(renewalType === 'MTOP' ? RENEWAL_FEES.mtop.renewal_fee : RENEWAL_FEES.franchise.renewal_fee).toFixed(2)}</span>
                         </div>
                       )}
                       {formData.sticker_fee_checked && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-700">Sticker Fee:</span>
-                          <span className="font-semibold">₱{(renewalType === 'MTOP' ? RENEWAL_FEES.mtop.sticker_fee : RENEWAL_FEES.mayor.sticker_fee).toFixed(2)}</span>
+                          <span className="font-semibold">₱{(renewalType === 'MTOP' ? RENEWAL_FEES.mtop.sticker_fee : RENEWAL_FEES.franchise.sticker_fee).toFixed(2)}</span>
                         </div>
                       )}
                       {formData.inspection_fee_checked && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-700">Inspection Fee:</span>
-                          <span className="font-semibold">₱{(renewalType === 'MTOP' ? RENEWAL_FEES.mtop.inspection_fee : RENEWAL_FEES.mayor.inspection_fee).toFixed(2)}</span>
+                          <span className="font-semibold">₱{(renewalType === 'MTOP' ? RENEWAL_FEES.mtop.inspection_fee : RENEWAL_FEES.franchise.inspection_fee).toFixed(2)}</span>
                         </div>
                       )}
                     </div>
                     <div className="border-t pt-3 mt-3">
                       <p className="font-medium">Total Amount: <span className="text-2xl font-bold" style={{ color: COLORS.primary }}>₱{(
-                        (formData.renewal_fee_checked ? (renewalType === 'MTOP' ? RENEWAL_FEES.mtop.renewal_fee : RENEWAL_FEES.mayor.renewal_fee) : 0) + 
-                        (formData.sticker_fee_checked ? (renewalType === 'MTOP' ? RENEWAL_FEES.mtop.sticker_fee : RENEWAL_FEES.mayor.sticker_fee) : 0) + 
-                        (formData.inspection_fee_checked ? (renewalType === 'MTOP' ? RENEWAL_FEES.mtop.inspection_fee : RENEWAL_FEES.mayor.inspection_fee) : 0)
+                        (formData.renewal_fee_checked ? (renewalType === 'MTOP' ? RENEWAL_FEES.mtop.renewal_fee : RENEWAL_FEES.franchise.renewal_fee) : 0) + 
+                        (formData.sticker_fee_checked ? (renewalType === 'MTOP' ? RENEWAL_FEES.mtop.sticker_fee : RENEWAL_FEES.franchise.sticker_fee) : 0) + 
+                        (formData.inspection_fee_checked ? (renewalType === 'MTOP' ? RENEWAL_FEES.mtop.inspection_fee : RENEWAL_FEES.franchise.inspection_fee) : 0)
                       ).toFixed(2)}</span></p>
                     </div>
                   </div>
@@ -3786,7 +3786,7 @@ const checkExistingPermit = async () => {
         <div>
           <h1 className="text-2xl md:text-4xl font-bold" style={{ color: COLORS.primary }}>PERMIT RENEWAL APPLICATION</h1>
           <p className="mt-2" style={{ color: COLORS.secondary }}>
-            Renew your {renewalType === 'MTOP' ? 'Motorized Tricycle Operator\'s Permit (MTOP)' : 'Transport Mayor\'s Permit'}.
+            Renew your {renewalType === 'MTOP' ? 'Motorized Tricycle Operator\'s Permit (MTOP)' : 'Franchise Permit'}.
           </p>
         </div>
         <button
@@ -3890,7 +3890,7 @@ const checkExistingPermit = async () => {
                   title: 'Confirm Renewal Submission',
                   html: `
                     <div style="text-align: left;">
-                      <p style="margin-bottom: 15px;">You are about to submit your ${renewalType === 'MTOP' ? 'MTOP' : 'Mayor\'s Permit'} renewal application.</p>
+                      <p style="margin-bottom: 15px;">You are about to submit your ${renewalType === 'MTOP' ? 'MTOP' : 'Franchise Permit'} renewal application.</p>
                       ${existingPermit ? `
                         <div style="background-color: #EFF6FF; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #BFDBFE;">
                           <p style="margin: 0; font-weight: 600; color: #1E40AF; margin-bottom: 8px;">✓ Existing Permit Verified</p>

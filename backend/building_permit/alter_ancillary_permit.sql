@@ -31,7 +31,12 @@ ALTER TABLE `ancillary_permit`
   ADD COLUMN `document_id_path` varchar(500) DEFAULT NULL AFTER `document_plans_path`,
   ADD COLUMN `signature_file_path` varchar(500) DEFAULT NULL AFTER `document_id_path`;
 
--- 4. Add indexes for common queries
+-- 4. Add user_id column for tracking applications by user
+ALTER TABLE `ancillary_permit`
+  ADD COLUMN `user_id` int(11) DEFAULT 0 AFTER `signature_file_path`;
+
+-- 5. Add indexes for common queries
 ALTER TABLE `ancillary_permit`
   ADD KEY `idx_ancillary_permit_type` (`permit_type`),
-  ADD KEY `idx_ancillary_status` (`status`);
+  ADD KEY `idx_ancillary_status` (`status`),
+  ADD KEY `idx_ancillary_user_id` (`user_id`);

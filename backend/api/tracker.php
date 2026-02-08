@@ -315,7 +315,7 @@ try {
                         'id' => $row['application_id'] ?? 'N/A',
                         'permitType' => 'Franchise Permit',
                         'application_type' => $row['permit_type'] ?? 'New',
-                        'status' => $row['status'] ?? 'Pending',
+                        'status' => ucfirst($row['status'] ?? 'Pending'),
                         'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
                         'businessName' => $row['toda_name'] ?? 'N/A',
                         'email' => $row['email'] ?? '',
@@ -338,6 +338,58 @@ try {
     }
 } catch (Exception $e) {
     error_log("Tracker - Franchise permit error: " . $e->getMessage());
+}
+
+// ===== LIQUOR PERMIT =====
+try {
+    $conn = new mysqli('localhost', 'eplms_paul', 'mypassword', 'eplms_business_permit_db');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT * FROM liquor_permit_applications WHERE business_email = ? " . ($userId > 0 ? "OR user_id = ? " : "") . "ORDER BY created_at DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $appType = 'New';
+                    switch ($row['application_type'] ?? 'NEW') {
+                        case 'RENEWAL': $appType = 'Renewal'; break;
+                        case 'AMENDMENT': $appType = 'Amendment'; break;
+                        default: $appType = 'New'; break;
+                    }
+                    $allApplications[] = [
+                        'id' => $row['applicant_id'] ?? ('LIQ-' . ($row['permit_id'] ?? 'N/A')),
+                        'permitType' => 'Business Permit',
+                        'application_type' => 'Liquor - ' . $appType,
+                        'status' => ucfirst(strtolower($row['status'] ?? 'Pending')),
+                        'applicantName' => trim(($row['owner_first_name'] ?? '') . ' ' . ($row['owner_last_name'] ?? '')),
+                        'businessName' => $row['business_name'] ?? 'N/A',
+                        'email' => $row['business_email'] ?? '',
+                        'address' => $row['business_address'] ?? 'N/A',
+                        'contactNumber' => $row['business_phone'] ?? 'N/A',
+                        'submittedDate' => $row['date_submitted'] ?? $row['created_at'] ?? null,
+                        'approvedDate' => null,
+                        'expirationDate' => null,
+                        'fees' => '0.00',
+                        'receiptNumber' => 'N/A',
+                        'user_id' => $row['user_id'] ?? 0,
+                        'remarks' => $row['renewal_reason'] ?? $row['amendment_reason'] ?? '',
+                        'compliance_notes' => ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
+        $conn->close();
+    }
+} catch (Exception $e) {
+    error_log("Tracker - Liquor permit error: " . $e->getMessage());
 }
 
 // Sort all applications by submitted date (most recent first)

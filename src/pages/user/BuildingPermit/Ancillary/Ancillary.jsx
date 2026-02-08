@@ -362,7 +362,7 @@ export default function AncillaryPermits() {
         try { logPermitSubmission("Building Permit", result.data?.permit_id || "", { permit_type: selectedPermit?.title || "Ancillary" }); } catch(e) { console.warn('Activity log failed:', e); }
         Swal.fire({ icon: 'success', title: 'Application Submitted!',
           html: `<div style="font-family:${COLORS.font}"><p>Your <strong>${selectedPermit.title}</strong> application has been submitted.</p><p class="mt-2"><strong>Permit ID:</strong> ${result.data?.permit_id || 'N/A'}</p></div>`,
-          confirmButtonColor: COLORS.success }).then(() => navigate('/user/building/type'));
+          confirmButtonColor: COLORS.success, confirmButtonText: 'Track Application' }).then(() => navigate('/user/permittracker'));
       } else { throw new Error(result.message || 'Submission failed'); }
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Submission Failed', html: `<p style="font-family:${COLORS.font}">${error.message}</p>`, confirmButtonColor: COLORS.danger });

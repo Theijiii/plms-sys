@@ -2116,7 +2116,7 @@ export default function FranchiseNew() {
       
       if (data.success) {
         showSuccessMessage(`Application submitted successfully! Application ID: ${data.data.application_id}`);
-        logPermitSubmission("Franchise Permit", data.data?.application_id || "", { permit_type: formData.permit_type || "New" });
+        try { logPermitSubmission("Franchise Permit", data.data?.application_id || "", { permit_type: formData.permit_subtype || "New" }); } catch(e) { console.warn('Activity log failed:', e); }
         setTimeout(() => { navigate("/user/permittracker"); }, 3000);
       } else {
         showErrorMessage(`Error: ${data.message || 'Unknown error'}`);

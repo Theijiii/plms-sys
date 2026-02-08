@@ -194,7 +194,7 @@ function handleApplication() {
             'permit_type' => $_POST['permit_type'] ?? 'NEW',
             'permit_subtype' => $_POST['permit_subtype'] ?? 'FRANCHISE',
             'operator_type' => $_POST['operator_type'] ?? '',
-            'status' => 'pending',
+            'status' => 'Pending',
             'first_name' => $_POST['first_name'] ?? '',
             'last_name' => $_POST['last_name'] ?? '',
             'middle_initial' => $_POST['middle_initial'] ?? '',
@@ -266,21 +266,29 @@ function handleApplication() {
             $data[$key] = isset($_POST[$key]) ? 1 : 0;
         }
         
-        // Find user_id
-        $userId = null;
-        $email = $_POST['email'] ?? '';
-        if (!empty($email)) {
-            $checkUser = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
-            if ($checkUser) {
-                $checkUser->bind_param("s", $email);
-                $checkUser->execute();
-                $userResult = $checkUser->get_result();
-                
-                if ($userResult->num_rows > 0) {
-                    $userRow = $userResult->fetch_assoc();
-                    $userId = $userRow['user_id'];
+        // Use user_id from POST (sent by frontend from localStorage)
+        $userId = !empty($_POST['user_id']) ? intval($_POST['user_id']) : null;
+        
+        // Fallback: try to find user_id by email if not provided
+        if (!$userId) {
+            try {
+                $email = $_POST['email'] ?? '';
+                if (!empty($email)) {
+                    $checkUser = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+                    if ($checkUser) {
+                        $checkUser->bind_param("s", $email);
+                        $checkUser->execute();
+                        $userResult = $checkUser->get_result();
+                        if ($userResult->num_rows > 0) {
+                            $userRow = $userResult->fetch_assoc();
+                            $userId = $userRow['user_id'];
+                        }
+                        $checkUser->close();
+                    }
                 }
-                $checkUser->close();
+            } catch (Exception $e) {
+                // users table may not exist in this database - that's OK
+                error_log("User lookup fallback failed: " . $e->getMessage());
             }
         }
         
