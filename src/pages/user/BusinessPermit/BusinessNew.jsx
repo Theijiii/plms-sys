@@ -186,16 +186,27 @@ export default function BusinessNew() {
 
   const fetchZoningApplications = async () => {
     try {
-      const response = await fetch(ZONING_API);
+      const response = await fetch(ZONING_API, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        mode: 'cors'
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log("Zoning API response:", data);
       
       if (data.success && data.data) {
         setZoningApplications(data.data);
+        console.log("Zoning applications loaded:", data.data.length, "records");
+      } else if (Array.isArray(data)) {
+        setZoningApplications(data);
+        console.log("Zoning applications loaded (array):", data.length, "records");
+      } else {
+        console.warn("Unexpected zoning API response structure:", data);
       }
     } catch (error) {
       console.error("Error fetching zoning applications:", error);
