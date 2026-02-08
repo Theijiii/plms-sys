@@ -170,7 +170,7 @@ try {
         $postData['amendment_type'] ?? '',
         $postData['amendment_details'] ?? '',
         $postData['amendment_reason'] ?? '',
-        $postData['applicant_signature'] ?? '',
+        '', // applicant_signature - will be updated after file save
         isset($postData['declaration_agreed']) ? intval($postData['declaration_agreed']) : 0,
         $postData['date_submitted'] ?? date('Y-m-d'),
         $postData['time_submitted'] ?? date('H:i:s'),
@@ -239,6 +239,37 @@ try {
     }
 
     $stmt->close();
+
+    // Save applicant signature as file (base64 data URI is too large for DB column)
+    $signatureData = $postData['applicant_signature'] ?? '';
+    if (!empty($signatureData) && strpos($signatureData, 'data:image') === 0) {
+        $signatureDir = $uploadDir . 'signatures/';
+        if (!file_exists($signatureDir)) {
+            mkdir($signatureDir, 0777, true);
+        }
+        
+        // Decode base64 signature
+        $parts = explode(',', $signatureData, 2);
+        if (count($parts) === 2) {
+            $decoded = base64_decode($parts[1]);
+            if ($decoded !== false) {
+                $sigFilename = 'SIG_' . $permit_id . '_' . time() . '.png';
+                $sigPath = $signatureDir . $sigFilename;
+                
+                if (file_put_contents($sigPath, $decoded)) {
+                    $relativeSigPath = 'uploads/signatures/' . $sigFilename;
+                    $sigUpdateSql = "UPDATE liquor_permit_applications SET applicant_signature = ? WHERE permit_id = ?";
+                    $sigStmt = $conn->prepare($sigUpdateSql);
+                    if ($sigStmt) {
+                        $sigStmt->bind_param("si", $relativeSigPath, $permit_id);
+                        $sigStmt->execute();
+                        $sigStmt->close();
+                    }
+                    error_log("Signature saved to: $relativeSigPath");
+                }
+            }
+        }
+    }
 
     ob_clean();
     echo json_encode([

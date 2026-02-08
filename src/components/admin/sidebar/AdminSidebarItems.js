@@ -94,24 +94,7 @@ const AdminSidebarItems = [
     department: ["barangay", "super"],
   },
 
-  // ISSUED PERMITS (All departments + Super)
-  {
-    id: "issuedPermits",
-    label: "Issued Permits",
-    icon: FileCheck,
-    path: "/admin/issuedpermits",
-    department: ["business", "building", "transport", "barangay", "super"],
-  },
-
-  // REQUIREMENTS CHECKLIST (All departments + Super)
-  {
-    id: "requirementsChecklist",
-    label: "Requirements Checklist",
-    icon: ClipboardCheck,
-    path: "/admin/requirements",
-    department: ["business", "building", "transport", "barangay", "super"],
-  },
-
+  
   // AUDIT TRAIL (Super Admin only)
   {
     id: "auditTrail",

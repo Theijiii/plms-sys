@@ -84,8 +84,7 @@ try {
                 fa.remarks,
                 fa.notes,
                 fa.user_id,
-                fa.created_at,
-                fa.document_verification_data
+                fa.created_at
               FROM franchise_permit_applications fa
               WHERE 1=1";
     

@@ -2098,24 +2098,6 @@ export default function FranchiseNew() {
         formDataToSend.append('mtop_reference_id', formData.mtop_application_id);
       }
       
-      // Add AI document verification data as JSON for backend storage
-      if (documentVerification) {
-        const verificationData = {};
-        Object.entries(documentVerification).forEach(([docType, verInfo]) => {
-          if (verInfo && (verInfo.isVerified || verInfo.results || verInfo.error)) {
-            verificationData[docType] = {
-              isVerified: !!verInfo.isVerified,
-              notes: verInfo.isVerified 
-                ? 'AI Verified: Document type and owner name matched' 
-                : (verInfo.error || 'AI Verification failed or not attempted')
-            };
-          }
-        });
-        if (Object.keys(verificationData).length > 0) {
-          formDataToSend.append('document_verification_data', JSON.stringify(verificationData));
-        }
-      }
-      
       const response = await fetch(backendUrl, { method: "POST", body: formDataToSend });
       const responseText = await response.text();
       let data;

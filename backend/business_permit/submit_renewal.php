@@ -217,7 +217,7 @@ try {
     
     // Bind parameters - permit_id is AUTO_INCREMENT, so we start with applicant_id
     $stmt->bind_param(
-        'sssssssssssssssssssdsssssssddiiisssiiiii',
+        'ssssssssssssssssssdsssssssddiiisssiiiisi',
         $applicant_id,  // RBUS-YYYY-XXXXXX format
         $application_date,
         $permit_type,
@@ -264,9 +264,29 @@ try {
         throw new Exception('Database execute failed: ' . $stmt->error);
     }
     
-    // Get the auto-generated permit_id
-    $new_permit_id = $stmt->insert_id;
+    // Get the auto-generated permit_id (use $conn->insert_id for reliability)
+    $new_permit_id = $conn->insert_id;
     $stmt->close();
+    
+    // Safety check: verify we have a valid permit_id before inserting documents
+    if ($new_permit_id <= 0) {
+        // Fallback: query back the permit_id using the unique applicant_id
+        $fallback_sql = "SELECT permit_id FROM business_permit_applications WHERE applicant_id = ? LIMIT 1";
+        $fallback_stmt = $conn->prepare($fallback_sql);
+        if ($fallback_stmt) {
+            $fallback_stmt->bind_param('s', $applicant_id);
+            $fallback_stmt->execute();
+            $fallback_result = $fallback_stmt->get_result();
+            if ($fallback_row = $fallback_result->fetch_assoc()) {
+                $new_permit_id = $fallback_row['permit_id'];
+            }
+            $fallback_stmt->close();
+        }
+        
+        if ($new_permit_id <= 0) {
+            throw new Exception('Failed to retrieve permit ID after insertion. Please try again.');
+        }
+    }
     
     error_log("New renewal permit created with permit_id: " . $new_permit_id . " and applicant_id: " . $applicant_id);
     
