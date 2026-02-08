@@ -25,7 +25,7 @@ const COLORS = {
 };
 
 const API_BUS = "/backend/business_permit/business_permit.php";
-const ZONING_API = "https://urbanplanning.goserveph.com/api/zoning-applications";
+const ZONING_API = "https://urbanplanning.goserveph.com/api/issued-clearances";
 const BARANGAY_API = "/backend/barangay_permit/admin_fetch.php";
 const SANITATION_API = "https://health.goserveph.com/api/licensing_export.php";
 const NATIONALITIES = [
@@ -1046,12 +1046,13 @@ export default function BusinessNew() {
     try {
       // Search in fetched applications
       const foundApplication = zoningApplications.find(app => 
-        app.applicationNumber === zoningId || app.referenceNo === zoningId
+        app.clearance_no === zoningId || app.reference_no === zoningId
       );
 
       if (foundApplication) {
-        // ACCEPT BOTH 'approved' AND 'active' STATUS
-        if (foundApplication.status === 'approved' || foundApplication.status === 'active') {
+        // ACCEPT BOTH 'approved' AND 'active' STATUS (case-insensitive)
+        const statusLower = (foundApplication.status || '').toLowerCase();
+        if (statusLower === 'approved' || statusLower === 'active') {
           setZoningVerificationResult({
             success: true,
             message: `Zoning permit ID is VALID! Status: ${foundApplication.status}`,

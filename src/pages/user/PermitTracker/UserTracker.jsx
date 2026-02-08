@@ -80,10 +80,11 @@ export default function PermitTracker() {
       if (data.success) {
         const normalizeStatus = (s) => {
           if (!s) return 'Pending';
-          const lower = s.trim().toLowerCase();
+          const lower = s.trim().toLowerCase().replace(/[\s_]+/g, '_');
           if (lower === 'approved') return 'Approved';
           if (lower === 'rejected') return 'Rejected';
-          if (lower === 'for compliance') return 'For Compliance';
+          if (lower === 'for_compliance') return 'For Compliance';
+          if (lower === 'under_review') return 'Under Review';
           return 'Pending';
         };
         const apps = (data.applications || []).map(app => ({
@@ -764,18 +765,23 @@ export default function PermitTracker() {
                             <Download className="w-4 h-4" />
                           </button>
                         )}
-                        {t.status === "For Compliance" && (
-                          <label className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer" title="Upload Compliance Documents">
-                            <Upload className="w-4 h-4" />
-                            <input
-                              type="file"
-                              multiple
-                              onChange={(e) => handleFileUpload(t, e)}
-                              className="hidden"
-                              disabled={uploading}
-                            />
-                          </label>
-                        )}
+                        <label 
+                          className={`p-2 rounded-lg transition-colors ${
+                            t.status === 'For Compliance'
+                              ? 'text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 cursor-pointer'
+                              : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                          }`}
+                          title={t.status === 'For Compliance' ? 'Upload Compliance Documents' : 'Available when status is For Compliance'}
+                        >
+                          <Upload className="w-4 h-4" />
+                          <input
+                            type="file"
+                            multiple
+                            onChange={(e) => handleFileUpload(t, e)}
+                            className="hidden"
+                            disabled={uploading || t.status !== 'For Compliance'}
+                          />
+                        </label>
                       </div>
                     </td>
                   </tr>
@@ -1111,7 +1117,7 @@ export default function PermitTracker() {
                 !['id', 'permitType', 'application_type', 'status', 'applicantName', 'businessName', 
                   'address', 'contactNumber', 'submittedDate', 'approvedDate', 'rejectedDate', 
                   'expirationDate', 'fees', 'requirements', 'complianceNotes', 'rejectionReason',
-                  'email', 'receiptNumber', 'tin'].includes(key) && 
+                  'email', 'receiptNumber', 'tin', 'user_id', 'remarks'].includes(key) && 
                 selectedPermit[key] && 
                 selectedPermit[key] !== 'N/A' &&
                 typeof selectedPermit[key] !== 'object'
@@ -1123,7 +1129,7 @@ export default function PermitTracker() {
                       if (['id', 'permitType', 'application_type', 'status', 'applicantName', 'businessName', 
                           'address', 'contactNumber', 'submittedDate', 'approvedDate', 'rejectedDate', 
                           'expirationDate', 'fees', 'requirements', 'complianceNotes', 'rejectionReason',
-                          'email', 'receiptNumber', 'tin'].includes(key) || 
+                          'email', 'receiptNumber', 'tin', 'user_id', 'remarks'].includes(key) || 
                           !value || value === 'N/A' || typeof value === 'object') {
                         return null;
                       }

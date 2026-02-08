@@ -86,7 +86,14 @@ try {
                         'receiptNumber' => $row['official_receipt_no'] ?? 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['remarks'] ?? '',
-                        'compliance_notes' => $row['comments'] ?? ''
+                        'complianceNotes' => $row['comments'] ?? '',
+                        'tin' => $row['tin'] ?? '',
+                        'businessType' => $row['business_type'] ?? '',
+                        'ownershipType' => $row['ownership_type'] ?? '',
+                        'businessActivity' => $row['business_activity'] ?? '',
+                        'numberOfEmployees' => $row['number_of_employees'] ?? '',
+                        'businessArea' => $row['business_area'] ?? '',
+                        'dateOfApplication' => $row['date_of_application'] ?? ''
                     ];
                 }
             }
@@ -140,7 +147,10 @@ try {
                         'receiptNumber' => 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['amendment_reason'] ?? '',
-                        'compliance_notes' => ''
+                        'complianceNotes' => '',
+                        'amendmentType' => $amendLabel,
+                        'newBusinessName' => $row['new_business_name'] ?? '',
+                        'newAddress' => $row['new_address'] ?? ''
                     ];
                 }
             }
@@ -186,7 +196,13 @@ try {
                         'receiptNumber' => $row['receipt_number'] ?? 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['purpose'] ?? '',
-                        'compliance_notes' => $row['comments'] ?? ''
+                        'complianceNotes' => $row['comments'] ?? '',
+                        'purpose' => $row['purpose'] ?? '',
+                        'barangay' => $row['barangay'] ?? '',
+                        'civilStatus' => $row['civil_status'] ?? '',
+                        'birthDate' => $row['birth_date'] ?? '',
+                        'gender' => $row['gender'] ?? '',
+                        'nationality' => $row['nationality'] ?? ''
                     ];
                 }
             }
@@ -236,7 +252,17 @@ try {
                         'receiptNumber' => 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['remarks'] ?? '',
-                        'compliance_notes' => ''
+                        'complianceNotes' => '',
+                        'middleInitial' => $row['middle_initial'] ?? '',
+                        'formOfOwnership' => $row['form_of_ownership'] ?? '',
+                        'useOfPermit' => $row['use_of_permit'] ?? '',
+                        'numberOfStoreys' => $row['number_of_storeys'] ?? '',
+                        'lotArea' => $row['lot_area'] ?? '',
+                        'totalFloorArea' => $row['total_floor_area'] ?? '',
+                        'lotNo' => $row['lot_no'] ?? '',
+                        'blkNo' => $row['blk_no'] ?? '',
+                        'tctNo' => $row['tct_no'] ?? '',
+                        'taxDecNo' => $row['tax_dec_no'] ?? ''
                     ];
                 }
             }
@@ -282,7 +308,11 @@ try {
                         'receiptNumber' => $row['prc_license'] ?? 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => 'PRC License: ' . ($row['prc_license'] ?? 'N/A') . ' | PTR: ' . ($row['ptr_number'] ?? 'N/A'),
-                        'compliance_notes' => ''
+                        'complianceNotes' => '',
+                        'profession' => $row['profession'] ?? '',
+                        'roleInProject' => $row['role_in_project'] ?? '',
+                        'prcLicense' => $row['prc_license'] ?? '',
+                        'ptrNumber' => $row['ptr_number'] ?? ''
                     ];
                 }
             }
@@ -328,7 +358,25 @@ try {
                         'receiptNumber' => $row['franchise_fee_or'] ?? 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['remarks'] ?? '',
-                        'compliance_notes' => $row['notes'] ?? ''
+                        'complianceNotes' => $row['notes'] ?? '',
+                        'permitSubtype' => $row['permit_subtype'] ?? '',
+                        'operatorType' => $row['operator_type'] ?? '',
+                        'plateNumber' => $row['plate_number'] ?? '',
+                        'vehicleType' => $row['vehicle_type'] ?? '',
+                        'todaName' => $row['toda_name'] ?? '',
+                        'routeZone' => $row['route_zone'] ?? '',
+                        'district' => $row['district'] ?? '',
+                        'makeBrand' => $row['make_brand'] ?? '',
+                        'vehicleModel' => $row['model'] ?? '',
+                        'engineNumber' => $row['engine_number'] ?? '',
+                        'chassisNumber' => $row['chassis_number'] ?? '',
+                        'vehicleColor' => $row['color'] ?? '',
+                        'birthDate' => $row['birth_date'] ?? '',
+                        'citizenship' => $row['citizenship'] ?? '',
+                        'idType' => $row['id_type'] ?? '',
+                        'idNumber' => $row['id_number'] ?? '',
+                        'barangayOfOperation' => $row['barangay_of_operation'] ?? '',
+                        'yearAcquired' => $row['year_acquired'] ?? ''
                     ];
                 }
             }
@@ -380,7 +428,10 @@ try {
                         'receiptNumber' => 'N/A',
                         'user_id' => $row['user_id'] ?? 0,
                         'remarks' => $row['renewal_reason'] ?? $row['amendment_reason'] ?? '',
-                        'compliance_notes' => ''
+                        'complianceNotes' => '',
+                        'businessType' => $row['business_type'] ?? '',
+                        'liquorType' => $row['liquor_type'] ?? '',
+                        'applicationType' => $row['application_type'] ?? ''
                     ];
                 }
             }
