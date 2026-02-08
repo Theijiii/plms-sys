@@ -291,7 +291,7 @@ export default function LandingPage() {
                 Our Services
               </h2>
               <p className="text-gray-700 text-sm md:text-base">
-                gjdkjasjfgsahfga postdhasdgA wide-ranging digital system that streamlines the application, processing, tracking, and approval of permits and licenses across multiple sectors through a centralized and automated platform.
+                Wide-ranging digital system that streamlines the application, processing, tracking, and approval of permits and licenses across multiple sectors through a centralized and automated platform.
               </p>
             </div>
 
