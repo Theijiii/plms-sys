@@ -142,7 +142,7 @@ export default function LiquorPermitApplication() {
     // System fields
     applicant_id: '',
     date_submitted: getCurrentDate(),
-    time_submitted: new Date().toTimeString().slice(0, 8)
+    time_submitted: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
   });
 
   // Initialize with applicant_id

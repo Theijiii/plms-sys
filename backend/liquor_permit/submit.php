@@ -133,6 +133,14 @@ try {
     // Get user_id from POST data
     $user_id = isset($postData['user_id']) ? intval($postData['user_id']) : 0;
 
+    // Convert 12-hour AM/PM time to 24-hour format for MySQL TIME column
+    $rawTime = $postData['time_submitted'] ?? '';
+    $time_submitted = date('H:i:s'); // default fallback
+    if (!empty($rawTime)) {
+        $parsed = date_create_from_format('h:i A', $rawTime) ?: date_create_from_format('h:i:s A', $rawTime) ?: date_create_from_format('g:i A', $rawTime);
+        $time_submitted = $parsed ? $parsed->format('H:i:s') : $rawTime;
+    }
+
     // Check if user_id column exists in the table
     $hasUserIdColumn = false;
     $checkCol = $conn->query("SHOW COLUMNS FROM `liquor_permit_applications` LIKE 'user_id'");
@@ -180,7 +188,7 @@ try {
         '', // applicant_signature - will be updated after file save
         isset($postData['declaration_agreed']) ? intval($postData['declaration_agreed']) : 0,
         $postData['date_submitted'] ?? date('Y-m-d'),
-        $postData['time_submitted'] ?? date('H:i:s'),
+        $time_submitted,
         $postData['status'] ?? 'PENDING',
         $postData['permit_type'] ?? 'LIQUOR'
     ];

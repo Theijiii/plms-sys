@@ -762,7 +762,7 @@ const verifyBarangayClearance = async () => {
   setIsVerifyingBarangay(true);
   
   try {
-    const response = await fetch('/backend/barangay_permit/check_barangay_clearance.php', {
+    const response = await fetch('/backend/barangay_permit/admin_fetch.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
