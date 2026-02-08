@@ -299,9 +299,9 @@ export default function ProfessionalRegistration() {
             </div>
           `,
           confirmButtonColor: COLORS.success,
-          confirmButtonText: 'Back to Dashboard'
+          confirmButtonText: 'Track Application'
         }).then(() => {
-          navigate('/user/dashboard');
+          navigate('/user/permittracker');
         });
       } else {
         throw new Error(result.message || 'Submission failed');

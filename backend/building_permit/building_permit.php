@@ -116,8 +116,8 @@ function handleBuildingPermitSubmission() {
         $permit_group = trim($_POST['permit_group'] ?? '');
         $use_of_permit = trim($_POST['use_of_permit'] ?? '');
         $permit_action = trim($_POST['permit_action'] ?? '');
-        $proposed_date = $_POST['proposed_date_of_construction'] ?? null;
-        $expected_date = $_POST['expected_date_of_completion'] ?? null;
+        $proposed_date = !empty($_POST['proposed_date_of_construction']) ? $_POST['proposed_date_of_construction'] : null;
+        $expected_date = !empty($_POST['expected_date_of_completion']) ? $_POST['expected_date_of_completion'] : null;
         $total_cost = !empty($_POST['total_estimated_cost']) ? (float)$_POST['total_estimated_cost'] : 0;
         $prc_license = trim($_POST['prc_license'] ?? '');
         $remarks = trim($_POST['remarks'] ?? '');
@@ -189,8 +189,8 @@ function handleBuildingPermitSubmission() {
         $plumbing_cost = !empty($_POST['plumbing_cost']) ? (float)$_POST['plumbing_cost'] : 0;
         $other_cost = !empty($_POST['other_cost']) ? (float)$_POST['other_cost'] : 0;
         $equipment_cost = !empty($_POST['equipment_cost']) ? (float)$_POST['equipment_cost'] : 0;
-        $proposed_start = $_POST['proposed_start'] ?? null;
-        $expected_completion = $_POST['expected_completion'] ?? null;
+        $proposed_start = !empty($_POST['proposed_start']) ? $_POST['proposed_start'] : null;
+        $expected_completion = !empty($_POST['expected_completion']) ? $_POST['expected_completion'] : null;
 
         $stmt->bind_param('idddddddss',
             $site_id, $building_cost, $electrical_cost, $mechanical_cost,

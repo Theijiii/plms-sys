@@ -652,6 +652,8 @@ export default function PermitTracker() {
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         t.application_type === 'New' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
                         t.application_type === 'Renewal' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                        t.application_type?.startsWith('Amendment') ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300' :
+                        t.application_type === 'Professional Registration' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' :
                         'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
                       }`}>
                         {t.application_type}
@@ -928,6 +930,8 @@ export default function PermitTracker() {
                       <span className={`text-sm font-medium px-2 py-0.5 rounded ${
                         selectedPermit.application_type === 'New' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
                         selectedPermit.application_type === 'Renewal' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                        selectedPermit.application_type?.startsWith('Amendment') ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300' :
+                        selectedPermit.application_type === 'Professional Registration' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' :
                         'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
                       }`}>{selectedPermit.application_type || 'N/A'}</span>
                     </div>

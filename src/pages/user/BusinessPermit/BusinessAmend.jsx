@@ -781,7 +781,7 @@ const handleSubmit = async () => {
       owner_id_file: null,
       applicant_signature: '',
       date_submitted: getCurrentDate(),
-      date_submitted_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      date_submitted_time: new Date().toTimeString().slice(0, 8)
     });
     setErrors({});
     setAgreeDeclaration(false);

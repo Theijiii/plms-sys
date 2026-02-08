@@ -162,26 +162,18 @@ try {
             $filePath = $uploadDir . $fileName;
             
             if (move_uploaded_file($file['tmp_name'], $filePath)) {
-                // Save to application_documents table
-                $docSql = "INSERT INTO application_documents (
-                    permit_id, document_type, document_name, 
-                    file_path, file_type, file_size, upload_date
-                ) VALUES (?, ?, ?, ?, ?, ?, NOW())";
-                
-                $docStmt = $conn->prepare($docSql);
-                if ($docStmt) {
-                    $docStmt->bind_param(
-                        'issssi',
-                        $permit_id,
-                        $docType,
-                        $file['name'],
-                        $filePath,
-                        $file['type'],
-                        $file['size']
-                    );
-                    $docStmt->execute();
-                    $docStmt->close();
+                // Store file path directly in the special_permit_applications record
+                // (application_documents FK references business_permit_applications, not special_permit_applications)
+                $relativePath = 'uploads/special/' . $fileName;
+                $updateSql = "UPDATE special_permit_applications SET remarks = CONCAT(COALESCE(remarks, ''), ?, ' ') WHERE id = ?";
+                $updateStmt = $conn->prepare($updateSql);
+                if ($updateStmt) {
+                    $docEntry = "[{$docType}:{$relativePath}]";
+                    $updateStmt->bind_param('si', $docEntry, $permit_id);
+                    $updateStmt->execute();
+                    $updateStmt->close();
                 }
+                error_log("Uploaded $docType for special permit $permit_id: $relativePath");
             }
         }
     }

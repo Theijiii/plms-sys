@@ -98,6 +98,60 @@ try {
     error_log("Tracker - Business permit error: " . $e->getMessage());
 }
 
+// ===== BUSINESS AMENDMENT =====
+try {
+    $conn = new mysqli('localhost', 'eplms_paul', 'mypassword', 'eplms_business_permit_db');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT * FROM business_amendment_applications WHERE email = ? " . ($userId > 0 ? "OR user_id = ? " : "") . "ORDER BY date_submitted DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $amendType = $row['amendment_type'] ?? '';
+                    $amendLabel = 'Amendment';
+                    switch ($amendType) {
+                        case 'CHANGE_BUSINESS_NAME': $amendLabel = 'Change Business Name'; break;
+                        case 'CHANGE_BUSINESS_LINE': $amendLabel = 'Change Business Line'; break;
+                        case 'CHANGE_BUSINESS_LOCATION': $amendLabel = 'Change Business Location'; break;
+                        case 'CHANGE_OWNER': $amendLabel = 'Change of Owner'; break;
+                    }
+                    $allApplications[] = [
+                        'id' => $row['applicant_id'] ?? ('AMD-' . ($row['id'] ?? 'N/A')),
+                        'permitType' => 'Business Permit',
+                        'application_type' => 'Amendment - ' . $amendLabel,
+                        'status' => ucfirst($row['status'] ?? 'Pending'),
+                        'applicantName' => $row['contact_person'] ?? 'N/A',
+                        'businessName' => $row['business_name'] ?? 'N/A',
+                        'email' => $row['email'] ?? '',
+                        'address' => $row['new_address'] ?? 'N/A',
+                        'contactNumber' => $row['contact_number'] ?? 'N/A',
+                        'submittedDate' => $row['date_submitted'] ?? $row['application_date'] ?? null,
+                        'approvedDate' => $row['approved_date'] ?? null,
+                        'expirationDate' => null,
+                        'fees' => '0.00',
+                        'receiptNumber' => 'N/A',
+                        'user_id' => $row['user_id'] ?? 0,
+                        'remarks' => $row['amendment_reason'] ?? '',
+                        'compliance_notes' => ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
+        $conn->close();
+    }
+} catch (Exception $e) {
+    error_log("Tracker - Business amendment error: " . $e->getMessage());
+}
+
 // ===== BARANGAY PERMIT =====
 try {
     $conn = new mysqli('localhost', 'eplms_karl', 'mypassword', 'eplms_barangay_permit_db');
@@ -192,6 +246,52 @@ try {
     }
 } catch (Exception $e) {
     error_log("Tracker - Building permit error: " . $e->getMessage());
+}
+
+// ===== PROFESSIONAL REGISTRATION =====
+try {
+    $conn = new mysqli('localhost', 'eplms_ella', 'mypassword', 'eplms_building_permit_db');
+    if (!$conn->connect_error) {
+        $conn->set_charset("utf8mb4");
+        $query = "SELECT * FROM professional_registrations WHERE email = ? " . ($userId > 0 ? "OR user_id = ? " : "") . "ORDER BY date_submitted DESC";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if ($userId > 0) {
+                $stmt->bind_param("si", $userEmail, $userId);
+            } else {
+                $stmt->bind_param("s", $userEmail);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $allApplications[] = [
+                        'id' => $row['registration_id'] ?? 'N/A',
+                        'permitType' => 'Building Permit',
+                        'application_type' => 'Professional Registration',
+                        'status' => ucfirst($row['status'] ?? 'Pending'),
+                        'applicantName' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
+                        'businessName' => ($row['profession'] ?? '') . ' - ' . ($row['role_in_project'] ?? ''),
+                        'email' => $row['email'] ?? '',
+                        'address' => 'N/A',
+                        'contactNumber' => $row['contact_number'] ?? 'N/A',
+                        'submittedDate' => $row['date_submitted'] ?? null,
+                        'approvedDate' => $row['approved_date'] ?? null,
+                        'expirationDate' => $row['prc_expiry'] ?? null,
+                        'fees' => '0.00',
+                        'receiptNumber' => $row['prc_license'] ?? 'N/A',
+                        'user_id' => $row['user_id'] ?? 0,
+                        'remarks' => 'PRC License: ' . ($row['prc_license'] ?? 'N/A') . ' | PTR: ' . ($row['ptr_number'] ?? 'N/A'),
+                        'compliance_notes' => ''
+                    ];
+                }
+            }
+            $stmt->close();
+        }
+        $conn->close();
+    }
+} catch (Exception $e) {
+    error_log("Tracker - Professional registration error: " . $e->getMessage());
 }
 
 // ===== FRANCHISE PERMIT =====

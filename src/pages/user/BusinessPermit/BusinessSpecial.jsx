@@ -100,7 +100,7 @@ export default function BusinessSpecialPermitApplication() {
     // System fields
     applicant_id: '',
     date_submitted: getCurrentDate(),
-    time_submitted: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    time_submitted: new Date().toTimeString().slice(0, 8)
   });
 
   // Initialize with applicant_id

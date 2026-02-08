@@ -336,8 +336,16 @@ export default function AncillaryPermits() {
     try {
       const fd = new FormData();
       fd.append('permit_type', selectedPermit.id);
+
+      // Add user_id for tracking applications by user
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
+      fd.append('user_id', userId);
+
       Object.entries(formData).forEach(([k, v]) => {
-        if (v !== null && k !== 'document_plans' && k !== 'document_id' && k !== 'signature_file' && k !== 'agree_declaration') fd.append(k, v);
+        if (v === null || v === undefined) return;
+        if (k === 'document_plans' || k === 'document_id' || k === 'signature_file' || k === 'agree_declaration' || k === 'date_submitted') return;
+        if (v instanceof File) return;
+        fd.append(k, v);
       });
       fd.append('type_specific_data', JSON.stringify(typeData));
       if (formData.document_plans) fd.append('document_plans', formData.document_plans);
@@ -351,7 +359,7 @@ export default function AncillaryPermits() {
       
       const result = await response.json();
       if (result.success) {
-        logPermitSubmission("Building Permit", result.data?.permit_id || "", { permit_type: selectedPermit?.title || "Ancillary" });
+        try { logPermitSubmission("Building Permit", result.data?.permit_id || "", { permit_type: selectedPermit?.title || "Ancillary" }); } catch(e) { console.warn('Activity log failed:', e); }
         Swal.fire({ icon: 'success', title: 'Application Submitted!',
           html: `<div style="font-family:${COLORS.font}"><p>Your <strong>${selectedPermit.title}</strong> application has been submitted.</p><p class="mt-2"><strong>Permit ID:</strong> ${result.data?.permit_id || 'N/A'}</p></div>`,
           confirmButtonColor: COLORS.success }).then(() => navigate('/user/building/type'));

@@ -121,10 +121,17 @@ export default function BuildingNew() {
 
       Object.keys(formData).forEach(key => {
         const value = formData[key];
+        if (value === null || value === undefined) return;
         if (value instanceof File || value instanceof FileList) return;
         if (Array.isArray(value)) return;
         submitData.append(key, value);
       });
+
+      // Add permit_action for backend
+      submitData.append('permit_action', 'NEW');
+
+      // Send prc_no also as prc_license for backend compatibility
+      if (formData.prc_no) submitData.append('prc_license', formData.prc_no);
 
       // Add user_id for tracking applications by user
       const userId = localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0';
@@ -133,7 +140,7 @@ export default function BuildingNew() {
       if (formData.signature) submitData.append("signature", formData.signature);
       if (formData.attachments && formData.attachments.length > 0) {
         for (let i = 0; i < formData.attachments.length; i++) {
-          submitData.append("attachments", formData.attachments[i]);
+          submitData.append("attachments[]", formData.attachments[i]);
         }
       }
 
@@ -149,7 +156,7 @@ export default function BuildingNew() {
       const data = await response.json();
 
       if (data.success) {
-        logPermitSubmission("Building Permit", data.data?.application_id || "", { permit_type: "New" });
+        try { logPermitSubmission("Building Permit", data.data?.application_id || "", { permit_type: "New" }); } catch(e) { console.warn('Activity log failed:', e); }
         Swal.fire({
           icon: 'success',
           title: 'Application Submitted!',

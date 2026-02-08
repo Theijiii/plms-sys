@@ -488,6 +488,7 @@ export default function RenewalBuilding() {
       Object.entries({
         user_id: localStorage.getItem('user_id') || localStorage.getItem('goserveph_user_id') || '0',
         permit_action: 'RENEWAL',
+        permit_group: '',
         previous_permit_number: formData.previous_permit_number,
         previous_permit_expiry: formData.previous_permit_expiry,
         first_name: formData.first_name,
@@ -501,7 +502,10 @@ export default function RenewalBuilding() {
         home_address: formData.home_address || '',
         form_of_ownership: formData.form_of_ownership,
         use_of_permit: formData.use_of_permit,
+        prc_license: '',
         remarks: formData.remarks || '',
+        proposed_date_of_construction: '',
+        expected_date_of_completion: '',
         total_estimated_cost: formData.total_estimated_cost || '0',
         lot_no: formData.lot_no || '',
         blk_no: formData.blk_no || '',
@@ -515,6 +519,15 @@ export default function RenewalBuilding() {
         number_of_storeys: formData.number_of_storeys || '0',
         total_floor_area: formData.total_floor_area || '0',
         lot_area: formData.lot_area || '0',
+        building_cost: '0',
+        electrical_cost: '0',
+        mechanical_cost: '0',
+        electronics_cost: '0',
+        plumbing_cost: '0',
+        other_cost: '0',
+        equipment_cost: '0',
+        proposed_start: '',
+        expected_completion: '',
       }).forEach(([key, value]) => {
         formDataToSend.append(key, value);
       });
@@ -549,7 +562,7 @@ export default function RenewalBuilding() {
       }
 
       if (data.success) {
-        logPermitSubmission("Building Permit", data.application_id || data.data?.application_id || "", { permit_type: "Renewal" });
+        try { logPermitSubmission("Building Permit", data.application_id || data.data?.application_id || "", { permit_type: "Renewal" }); } catch(e) { console.warn('Activity log failed:', e); }
         await showSuccessMessage(data.message || 'Renewal application submitted successfully!');
       } else {
         await showErrorMessage(data.message || 'Failed to submit application.');
